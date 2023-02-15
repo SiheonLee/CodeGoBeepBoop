@@ -38,10 +38,19 @@ char *readInputLine() {
 }
 
 /**
+ * The function isOperatorCharacter checks whether the input paramater \param c is an operator.
+ * @param c input character.
+ * @return a bool denoting whether \param c is an operator.
+ */
+bool isOperatorCharacter(char c) {
+    return c == '&' || c == '|' || c == ';' || c == '<' || c == '>';
+}
+
+/**
  * Reads an identifier in string \param s starting at index \param start.
  * @param s input string.
  * @param start starting index in string \param s.
- * @return
+ * @return a pointer to the start of the identifier string
  */
 char *matchIdentifier(char *s, int *start) {
     int strLen = INITIAL_STRING_SIZE;
@@ -51,13 +60,16 @@ char *matchIdentifier(char *s, int *start) {
     assert(ident != NULL);
 
     bool quoteStarted = false;
-    while (!isspace(s[*start + offset]) || quoteStarted) { // Ensure that whitespace in strings is accepted
+    while ((!isspace(s[*start + offset]) && !isOperatorCharacter(s[*start + offset])) || quoteStarted) { // Ensure that whitespace in strings is accepted
         if (s[*start + offset] == '\"') { // Strip the quotes from the input before storing in the identifier
             quoteStarted = !quoteStarted;
             offset++;
             continue;
         }
         ident[pos++] = s[*start + offset++];
+        if (s[*start + offset] == '\0') { // Identifiers of size 1
+            break;
+        }
         if (pos >= strLen) { // Resize the string if necessary
             strLen = 2 * strLen;
             ident = realloc(ident, (strLen + 1) * sizeof(*ident));
@@ -65,7 +77,7 @@ char *matchIdentifier(char *s, int *start) {
         }
     }
     ident[pos] = '\0';
-    *start = *start + pos;
+    *start = *start + offset;
     return ident;
 }
 
@@ -85,6 +97,42 @@ List newNode(char *s, int *start) {
 }
 
 /**
+ * Reads an operator in string \param s starting at index \param start.
+ * @param s input string.
+ * @param start starting index in string \param s.
+ * @return a pointer to the start of the operator string.
+ */
+char *matchOperator(char *s, int *start) {
+    int strLen = 2; // the operator consists of *at most* 2 characters
+    int pos = 0, offset = 0;
+
+    char *op = malloc((strLen + 1) * sizeof(*op));
+    assert(op != NULL);
+
+    while (isOperatorCharacter(s[*start + offset])) {
+        op[pos++] = s[*start + offset++];
+    }
+    op[pos] = '\0';
+    *start = *start + offset;
+    return op;
+}
+
+/**
+ * The function newOperatorNode makes a new operator node for the token list and fills it with the token that
+ * has been read. Precondition: !isspace(a[*ip]).
+ * @param s input string.
+ * @param start starting index in string \param s.
+ * @return a list node that contains the current token.
+ */
+List newOperatorNode(char *s, int *start) {
+    List node = malloc(sizeof(*node));
+    assert(node != NULL);
+    node->next = NULL;
+    node->t = matchOperator(s, start);
+    return node;
+}
+
+/**
  * The function tokenList reads an array and puts the tokens that are read in a list.
  * @param s input string.
  * @return a pointer to the beginning of the list.
@@ -98,8 +146,8 @@ List getTokenList(char *s) {
     while (i < length) {
         if (isspace(s[i])) { // spaces are skipped
             i++;
-        } else {
-            node = newNode(s, &i);
+        }else {
+            node = isOperatorCharacter(s[i]) ? newOperatorNode(s, &i) : newNode(s, &i);
             if (lastNode == NULL) { // there is no list yet
                 tl = node;
             } else { // a list already exists; add current node at the end

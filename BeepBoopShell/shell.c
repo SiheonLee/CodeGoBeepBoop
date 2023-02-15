@@ -116,12 +116,9 @@ bool parsePipeline(List *lp) {
  * @return a bool denoting whether the filename was parsed successfully.
  */
 bool parseFileName(List *lp) {
-    int size = 0;
-    while (!acceptToken(lp, " ") && !acceptToken(lp, "\n")) {
-        *lp = (*lp)->next;
-        size++;
-    }
-    return size > 0;
+    //TODO: Process the file name appropriately
+    char *fileName = (*lp)->t;
+    return true;
 }
 
 /**

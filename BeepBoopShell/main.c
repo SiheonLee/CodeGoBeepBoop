@@ -11,6 +11,8 @@ int main(int argc, char *argv[]) {
 
     //TODO: Signal back that the loop must stop when "exit" has been encountered (or EOF)
     while (true) {
+        printf("myshell> ");
+
         inputLine = readInputLine();
         tokenList = getTokenList(inputLine);
 
