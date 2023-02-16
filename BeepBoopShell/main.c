@@ -15,9 +15,11 @@ int main(int argc, char *argv[]) {
 
         inputLine = readInputLine();
         tokenList = getTokenList(inputLine);
+        List startTokenList = tokenList;
 
         bool parsedSuccessfully = parseInputLine(&tokenList);
         if (tokenList == NULL && parsedSuccessfully) {
+            printList(startTokenList);
             // Input was parsed successfully and can be accessed in "tokenList"
 
             // However, this is still a simple list of strings, it might be convenient
