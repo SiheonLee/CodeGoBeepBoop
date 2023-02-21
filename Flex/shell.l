@@ -122,7 +122,7 @@
                         // Entire string value is available in yytext with length yyleng
                         // Make sure to copy it!
                         printf("WORD: %s\n", yytext);
-
+                        
                         //////////// Put your code here!
                     }
 <<EOF>>             {

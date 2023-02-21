@@ -1,7 +1,13 @@
 #include <stdbool.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 #include "scanner.h"
+
+char *executable;
 
 /**
  * The function acceptToken checks whether the current token matches a target identifier,
@@ -24,6 +30,7 @@ bool acceptToken(List *lp, char *ident) {
  * @return a bool denoting whether the executable was parsed successfully.
  */
 bool parseExecutable(List *lp) {
+    executable = (*lp)->t;
 
     // TODO: Determine whether to accept parsing an executable here.
     // 
@@ -70,10 +77,35 @@ bool isOperator(char *s) {
  * @return a bool denoting whether the options were parsed successfully.
  */
 bool parseOptions(List *lp) {
-    //TODO: store each (*lp)->t as an option, if any exist
+    int size = 10;
+    char **execArgs = malloc(size * sizeof(char*));
+    int cnt = 0;
     while (*lp != NULL && !isOperator((*lp)->t)) {
+        // Increase size of array if needed
+        if (cnt == size) {
+            size *= 2;
+            execArgs = realloc(execArgs, size * sizeof(char*));
+        }
+
+        // Store argument in array
+        execArgs[cnt] = (*lp)->t;
+        cnt++;
         (*lp) = (*lp)->next;
     }
+    // if (isOperator((*lp)->t)) {
+        // TO-DO: Store global status variable, depending on the previous status we solve the next operator thingy
+    // }
+    execArgs[cnt] = NULL;
+
+    // Execute command
+    if (fork() != 0) {
+        waitpid(-1, NULL, 0);
+    } else {
+        execvp(executable, execArgs);
+        printf("Error: command not found!\n");
+        exit(127);
+    }
+    free(execArgs);
     return true;
 }
 
@@ -169,7 +201,20 @@ bool parseBuiltIn(List *lp) {
     };
 
     for (int i = 0; builtIns[i] != NULL; i++) {
-        if (acceptToken(lp, builtIns[i])) return true;
+        if (acceptToken(lp, builtIns[i])) {
+            switch (i) {
+            case 0:
+                printf("Exiting shell...\n");
+                exit(0);
+                break;
+            case 1:
+                printf("Status:\n");
+                break;
+            default:
+                break;
+            }
+            return true;
+        }
     }
 
     return false;

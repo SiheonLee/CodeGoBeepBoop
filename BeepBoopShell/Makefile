@@ -1,4 +1,4 @@
-all: shell
+all: clean shell
 
 shell:
 	gcc -std=c99 -Wall -pedantic main.c scanner.c shell.c -o shell
