@@ -9,7 +9,7 @@
 
 char *executable;
 int status;
-int exitCode;
+int exitCode = 0;
 
 /**
  * The function acceptToken checks whether the current token matches a target identifier,
@@ -78,7 +78,7 @@ bool isOperator(char *s) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the options were parsed successfully.
  */
-bool parseOptions(List *lp) {
+bool parseOptions(List *lp, int skipFlag) {
     int size = 10;
     char **execArgs = malloc(size * sizeof(char*));
     int cnt = 0;
@@ -100,6 +100,10 @@ bool parseOptions(List *lp) {
     execArgs[cnt] = NULL;
 
     // Execute command
+    if (skipFlag) {
+        free(execArgs);
+        return true;
+    }
     if (fork() != 0) {
         waitpid(-1, &status, 0);\
         if (WIFEXITED(status)) {
@@ -122,8 +126,8 @@ bool parseOptions(List *lp) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the command was parsed successfully.
  */
-bool parseCommand(List *lp) {
-    return parseExecutable(lp) && parseOptions(lp);
+bool parseCommand(List *lp, int skipFlag) {
+    return parseExecutable(lp) && parseOptions(lp, skipFlag);
 }
 
 /**
@@ -135,13 +139,13 @@ bool parseCommand(List *lp) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the pipeline was parsed successfully.
  */
-bool parsePipeline(List *lp) {
-    if (!parseCommand(lp)) {
+bool parsePipeline(List *lp, int skipFlag) {
+    if (!parseCommand(lp, skipFlag)) {
         return false;
     }
 
     if (acceptToken(lp, "|")) {
-        return parsePipeline(lp);
+        return parsePipeline(lp, skipFlag);
     }
 
     return true;
@@ -190,15 +194,12 @@ bool parseRedirections(List *lp) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the builtin was parsed successfully.
  */
-bool parseBuiltIn(List *lp, int *exitFlag) {
-
-    //
-    // TODO: Implement the logic for these builtins, and extend with
-    // more builtins down the line
-    //
-
+bool parseBuiltIn(List *lp, int *exitFlag, int skipFlag) {
     // NULL-terminated array makes it easy to expand this array later
     // without changing the code at other places.
+    if (skipFlag) {
+        return false;
+    }
     char *builtIns[] = {
             "exit",
             "status",
@@ -234,14 +235,14 @@ bool parseBuiltIn(List *lp, int *exitFlag) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the chain was parsed successfully.
  */
-bool parseChain(List *lp, int *exitFlag) {
-    if (parseBuiltIn(lp, exitFlag)) {
+bool parseChain(List *lp, int *exitFlag, int skipFlag) {
+    if (parseBuiltIn(lp, exitFlag, skipFlag)) {
         if (exitFlag) {
             return true;
         }
-        return parseOptions(lp);
+        return parseOptions(lp, skipFlag);
     }
-    if (parsePipeline(lp)) {
+    if (parsePipeline(lp, skipFlag)) {
         return parseRedirections(lp);
     }
     return false;
@@ -260,21 +261,27 @@ bool parseChain(List *lp, int *exitFlag) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the inputline was parsed successfully.
  */
-bool parseInputLine(List *lp, int *exitFlag) {
+bool parseInputLine(List *lp, int *exitFlag, int skipFlag) {
     if (isEmpty(*lp)) {
         return true;
     }
 
-    if (!parseChain(lp, exitFlag)) {
+    if (!parseChain(lp, exitFlag, skipFlag)) {
         return false;
     }
-
+    skipFlag = 0;
     if (acceptToken(lp, "&") || acceptToken(lp, "&&")) {
-        return parseInputLine(lp, exitFlag);
+        if (exitCode != 0) {
+            skipFlag = 1;
+        }
+        return parseInputLine(lp, exitFlag, skipFlag);
     } else if (acceptToken(lp, "||")) {
-        return parseInputLine(lp, exitFlag);
+        if (exitCode == 0) {
+            skipFlag = 1;
+        }
+        return parseInputLine(lp, exitFlag, skipFlag);
     } else if (acceptToken(lp, ";")) {
-        return parseInputLine(lp, exitFlag);
+        return parseInputLine(lp, exitFlag, skipFlag);
     }
 
     return true;
