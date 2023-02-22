@@ -66,6 +66,7 @@ char *matchIdentifier(char *s, int *start) {
     assert(ident != NULL);
 
     bool quoteStarted = false;
+    int length = strlen(s);
     while ((!isspace(s[*start + offset]) && !isOperatorCharacter(s[*start + offset])) || quoteStarted) { // Ensure that whitespace in strings is accepted
         if (s[*start + offset] == '\"') { // Strip the quotes from the input before storing in the identifier
             quoteStarted = !quoteStarted;
@@ -73,7 +74,7 @@ char *matchIdentifier(char *s, int *start) {
             continue;
         }
         ident[pos++] = s[*start + offset++];
-        if (*start + offset > strlen(s)) { // Identifiers of size 1
+        if (*start + offset > length) { // Identifiers of size 1
             break;
         }
         if (pos >= strLen) { // Resize the string if necessary

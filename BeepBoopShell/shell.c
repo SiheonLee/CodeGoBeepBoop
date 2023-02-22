@@ -7,8 +7,9 @@
 
 #include "scanner.h"
 
+    // The executable to be executed in the last parsed command
 char *executable;
-int status;
+    // Exit code of the last executed command
 int exitCode = 0;
 
 /**
@@ -28,23 +29,12 @@ bool acceptToken(List *lp, char *ident) {
 
 /**
  * The function parseExecutable parses an executable.
+ * The executable is saved in a global variable and is accessed by the parseOptions function.
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the executable was parsed successfully.
  */
 bool parseExecutable(List *lp) {
     executable = (*lp)->t;
-
-    // TODO: Determine whether to accept parsing an executable here.
-    // 
-    // It is not recommended to check for existence of the executable already
-    // here, since then it'll be hard to continue parsing the rest of the input
-    // line (command execution should continue after a "not found" command),
-    // it'll also be harder to print the correct error message.
-    // 
-    // Instead, we recommend to just do a syntactical check here, which makes
-    // more sense, and defer the binary existence check to the runtime part
-    // you'll write later.
-
     return true;
 }
 
@@ -74,11 +64,45 @@ bool isOperator(char *s) {
 }
 
 /**
- * The function parseOptions parses options.
+ * @brief Executes a command using fork() and exec().
+ * 
+ * @param execArgs the options of the command
+ * @param skipFlag if true, the command will not be executed
+ * @return true
+ */
+bool executeCommand(char **execArgs, int skipFlag) {
+    int status;
+    if (skipFlag) {
+        free(execArgs);
+        return true;
+    }
+
+    if (fork() != 0) {
+        // Parent process
+        waitpid(-1, &status, 0);
+        if (WIFEXITED(status)) {
+            exitCode = WEXITSTATUS(status);
+        }
+    } else {
+        // Child process
+        status = execvp(executable, execArgs);
+        printf("Error: command not found!\n");
+        exit(127);
+    }
+
+    free(execArgs);
+    return true;
+}
+
+/**
+ * The function parseOptions parses options. 
+ * It also calls the method executing the command.
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the options were parsed successfully.
  */
 bool parseOptions(List *lp, int skipFlag) {
+    
+    // Store all the options in an arguments array
     int size = 10;
     char **execArgs = malloc(size * sizeof(*execArgs));
     int cnt = 0;
@@ -94,28 +118,9 @@ bool parseOptions(List *lp, int skipFlag) {
         cnt++;
         (*lp) = (*lp)->next;
     }
-    // if (isOperator((*lp)->t)) {
-        // TO-DO: Store global status variable, depending on the previous status we solve the next operator thingy
-    // }
     execArgs[cnt] = NULL;
 
-    // Execute command
-    if (skipFlag) {
-        free(execArgs);
-        return true;
-    }
-    if (fork() != 0) {
-        waitpid(-1, &status, 0);
-        if (WIFEXITED(status)) {
-            exitCode = WEXITSTATUS(status);
-        }
-    } else {
-        status = execvp(executable, execArgs);
-        printf("Error: command not found!\n");
-        exit(127);
-    }
-    free(execArgs);
-    return true;
+    return executeCommand(execArgs, skipFlag);
 }
 
 /**
@@ -157,7 +162,7 @@ bool parsePipeline(List *lp, int skipFlag) {
  * @return a bool denoting whether the filename was parsed successfully.
  */
 bool parseFileName(List *lp) {
-    //TODO: Process the file name appropriately
+    //TODO: Process the file name appropriately (expected as a required later assignment)
     char *fileName = (*lp)->t;
     return true;
 }
@@ -202,7 +207,7 @@ bool parseBuiltIn(List *lp, int *exitFlag, int skipFlag) {
     }
     char *builtIns[] = {
             "exit",
-            "status",
+            "status",   
             NULL
     };
 
@@ -269,6 +274,9 @@ bool parseInputLine(List *lp, int *exitFlag, int skipFlag) {
     if (!parseChain(lp, exitFlag, skipFlag)) {
         return false;
     }
+
+    // A skipFlag is used in order to decide whether to skip the next command or not.
+    // This depends on the previous command's exit code and the operator used.
     skipFlag = 0;
     if (acceptToken(lp, "&") || acceptToken(lp, "&&")) {
         if (exitCode != 0) {
