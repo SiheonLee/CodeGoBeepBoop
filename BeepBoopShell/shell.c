@@ -270,7 +270,10 @@ bool parseInputLine(List *lp, int *exitFlag, int skipFlag) {
         return false;
     }
     skipFlag = 0;
-    if (acceptToken(lp, "&") || acceptToken(lp, "&&")) {
+    if (acceptToken(lp, "EOF")) {
+        *exitFlag = 1;
+        return true;
+    } else if (acceptToken(lp, "&") || acceptToken(lp, "&&")) {
         if (exitCode != 0) {
             skipFlag = 1;
         }
