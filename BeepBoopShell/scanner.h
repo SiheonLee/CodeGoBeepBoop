@@ -11,7 +11,7 @@ typedef struct ListNode {
 } ListNode;
 
 
-char *readInputLine();
+char *readInputLine(int *exitFlag);
 
 List getTokenList(char *s);
 

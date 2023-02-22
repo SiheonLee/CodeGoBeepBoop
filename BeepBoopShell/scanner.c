@@ -11,13 +11,18 @@
  * Reads an inputline from stdin.
  * @return a string containing the inputline.
  */
-char *readInputLine() {
+char *readInputLine(int *exitFlag) {
     int strLen = INITIAL_STRING_SIZE;
     int c = getchar();
     int i = 0;
 
     char *s = malloc((strLen + 1) * sizeof(*s));
     assert(s != NULL);
+
+    if (c == EOF) {
+        *exitFlag = 1;
+        return s;
+    }
 
     bool quoteStarted = false;
     while (c != '\n' || quoteStarted) { // Ensure that newlines in strings are accepted

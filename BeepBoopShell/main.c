@@ -12,13 +12,13 @@ int main(int argc, char *argv[]) {
 
     //TODO: Signal back that the loop must stop when "exit" has been encountered (or EOF)
     while (true) {
-        inputLine = readInputLine();
+        inputLine = readInputLine(&exitFlag);
         tokenList = getTokenList(inputLine);
         List startTokenList = tokenList;
 
         bool parsedSuccessfully = parseInputLine(&tokenList, &exitFlag, 0);
         if (tokenList == NULL && parsedSuccessfully) {
-            // printList(startTokenList);
+//             printList(startTokenList);
             // Input was parsed successfully and can be accessed in "tokenList"
 
             // However, this is still a simple list of strings, it might be convenient

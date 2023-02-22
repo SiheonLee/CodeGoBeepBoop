@@ -1,7 +1,7 @@
 all: clean shell
 
 shell:
-	gcc -v -std=c99 -Wall -pedantic main.c scanner.c shell.c -o shell
+	gcc -std=c99 -Wall -pedantic main.c scanner.c shell.c -o shell
 
 clean:
 	rm -f *~
