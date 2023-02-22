@@ -8,6 +8,8 @@
 #include "scanner.h"
 
 char *executable;
+int status;
+int exitCode;
 
 /**
  * The function acceptToken checks whether the current token matches a target identifier,
@@ -99,9 +101,12 @@ bool parseOptions(List *lp) {
 
     // Execute command
     if (fork() != 0) {
-        waitpid(-1, NULL, 0);
+        waitpid(-1, &status, 0);\
+        if (WIFEXITED(status)) {
+            exitCode = WEXITSTATUS(status);
+        }
     } else {
-        execvp(executable, execArgs);
+        status = execvp(executable, execArgs);
         printf("Error: command not found!\n");
         exit(127);
     }
@@ -207,7 +212,8 @@ bool parseBuiltIn(List *lp, int *exitFlag) {
                 *exitFlag = 1;
                 break;
             case 1:
-                printf("Status:\n");
+                printf("The most recent exit code is: %d\n", exitCode);
+                fflush(stdout);
                 break;
             default:
                 break;
