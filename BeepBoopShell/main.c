@@ -8,16 +8,15 @@
 int main(int argc, char *argv[]) {
     char *inputLine;
     List tokenList;
+    int exitFlag = 0;
 
     //TODO: Signal back that the loop must stop when "exit" has been encountered (or EOF)
     while (true) {
-        printf("myshell> ");
-
         inputLine = readInputLine();
         tokenList = getTokenList(inputLine);
-        // List startTokenList = tokenList;
+        List startTokenList = tokenList;
 
-        bool parsedSuccessfully = parseInputLine(&tokenList);
+        bool parsedSuccessfully = parseInputLine(&tokenList, &exitFlag);
         if (tokenList == NULL && parsedSuccessfully) {
             // printList(startTokenList);
             // Input was parsed successfully and can be accessed in "tokenList"
@@ -31,7 +30,10 @@ int main(int argc, char *argv[]) {
         }
 
         free(inputLine);
-        freeTokenList(tokenList);
+        freeTokenList(startTokenList);
+        if(exitFlag){
+            break;
+        }
     }
     
     return 0;

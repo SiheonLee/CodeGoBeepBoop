@@ -185,7 +185,7 @@ bool parseRedirections(List *lp) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the builtin was parsed successfully.
  */
-bool parseBuiltIn(List *lp) {
+bool parseBuiltIn(List *lp, int *exitFlag) {
 
     //
     // TODO: Implement the logic for these builtins, and extend with
@@ -204,8 +204,7 @@ bool parseBuiltIn(List *lp) {
         if (acceptToken(lp, builtIns[i])) {
             switch (i) {
             case 0:
-                printf("Exiting shell...\n");
-                exit(0);
+                *exitFlag = 1;
                 break;
             case 1:
                 printf("Status:\n");
@@ -229,8 +228,11 @@ bool parseBuiltIn(List *lp) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the chain was parsed successfully.
  */
-bool parseChain(List *lp) {
-    if (parseBuiltIn(lp)) {
+bool parseChain(List *lp, int *exitFlag) {
+    if (parseBuiltIn(lp, exitFlag)) {
+        if (exitFlag) {
+            return true;
+        }
         return parseOptions(lp);
     }
     if (parsePipeline(lp)) {
@@ -252,21 +254,21 @@ bool parseChain(List *lp) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the inputline was parsed successfully.
  */
-bool parseInputLine(List *lp) {
+bool parseInputLine(List *lp, int *exitFlag) {
     if (isEmpty(*lp)) {
         return true;
     }
 
-    if (!parseChain(lp)) {
+    if (!parseChain(lp, exitFlag)) {
         return false;
     }
 
     if (acceptToken(lp, "&") || acceptToken(lp, "&&")) {
-        return parseInputLine(lp);
+        return parseInputLine(lp, exitFlag);
     } else if (acceptToken(lp, "||")) {
-        return parseInputLine(lp);
+        return parseInputLine(lp, exitFlag);
     } else if (acceptToken(lp, ";")) {
-        return parseInputLine(lp);
+        return parseInputLine(lp, exitFlag);
     }
 
     return true;

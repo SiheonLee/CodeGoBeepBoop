@@ -67,7 +67,7 @@ char *matchIdentifier(char *s, int *start) {
             continue;
         }
         ident[pos++] = s[*start + offset++];
-        if (s[*start + offset] == '\0') { // Identifiers of size 1
+        if (*start + offset > strlen(s)) { // Identifiers of size 1
             break;
         }
         if (pos >= strLen) { // Resize the string if necessary
