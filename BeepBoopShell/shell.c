@@ -79,13 +79,13 @@ bool isOperator(char *s) {
  * @return a bool denoting whether the options were parsed successfully.
  */
 bool parseOptions(List *lp, int skipFlag) {
-    int size = 10;
+    int size = 1000;
     char **execArgs = malloc(size * sizeof(*execArgs));
     int cnt = 0;
     while (*lp != NULL && !isOperator((*lp)->t)) {
         // Increase size of array if needed
         if (cnt == (size - 2)) {
-            size *= 2;
+            size *= 4;
             execArgs = realloc(execArgs, size * sizeof(char*));
         }
 
