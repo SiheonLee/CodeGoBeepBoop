@@ -21,6 +21,7 @@ char *readInputLine(int *exitFlag) {
 
     if (c == EOF) {
         *exitFlag = 1;
+        s[0] = '\0';
         return s;
     }
 
