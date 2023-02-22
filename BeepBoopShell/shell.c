@@ -105,7 +105,7 @@ bool parseOptions(List *lp, int skipFlag) {
         return true;
     }
     if (fork() != 0) {
-        waitpid(-1, &status, 0);\
+        waitpid(-1, &status, 0);
         if (WIFEXITED(status)) {
             exitCode = WEXITSTATUS(status);
         }

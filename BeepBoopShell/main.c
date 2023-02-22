@@ -9,6 +9,8 @@ int main(int argc, char *argv[]) {
     char *inputLine;
     List tokenList;
     int exitFlag = 0;
+    setbuf(stdin, NULL);
+    setbuf(stdout, NULL);
 
     //TODO: Signal back that the loop must stop when "exit" has been encountered (or EOF)
     while (true) {

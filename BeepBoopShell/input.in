@@ -1,2 +1,4 @@
-echo x
-echo y
+./a
+Hello
+ls
+exit
