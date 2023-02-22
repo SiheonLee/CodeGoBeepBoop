@@ -109,7 +109,7 @@ bool parseOptions(List *lp, int skipFlag) {
     while (*lp != NULL && !isOperator((*lp)->t)) {
         // Increase size of array if needed
         if (cnt == (size - 2)) {
-            size *= 2;
+            size *= 4;
             execArgs = realloc(execArgs, size * sizeof(char*));
         }
 
