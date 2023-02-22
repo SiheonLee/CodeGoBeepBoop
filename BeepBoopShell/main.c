@@ -7,9 +7,6 @@
 #include "scanner.h"
 #include "shell.h"
 
-#define BONUS 1
-
-
 /**
  * @brief Main function of the shell. Runs the shell loop.
  * 
@@ -30,8 +27,15 @@ int main(int argc, char *argv[]) {
     // Shell loop
     while (true) {
         #if BONUS
+        int color = 0;
         if (getcwd(cwd, sizeof(cwd)) != NULL) {
-            printf("%s> ", cwd);
+            for(int i = 0; i < strlen(cwd); i++){
+                if(cwd[i] == '/'){
+                    printf("%s", rainbow[color++ % 6]);
+                }
+                printf("%c", cwd[i]);
+            }
+            printf("%s>%s ", BHWHT, RESET);
         }
         #endif
         inputLine = readInputLine(&exitFlag); // exitFlag will be set to 1 for EOF
@@ -40,7 +44,15 @@ int main(int argc, char *argv[]) {
 
         bool parsedSuccessfully = parseInputLine(&tokenList, &exitFlag, 0); // exitFlag will be set to 1 for exit command
         if (!(tokenList == NULL && parsedSuccessfully)) {
+            #if BONUS
+                printf("%s", HGRN);
+            #endif
+
             printf("Error: invalid syntax!\n");
+
+            #if BONUS
+                printf("%s", RESET);
+            #endif
         }
 
         free(inputLine);

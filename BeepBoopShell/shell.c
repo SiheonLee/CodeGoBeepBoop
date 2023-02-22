@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 
 #include "scanner.h"
+#include "bonus.h"
 
     // The executable to be executed in the last parsed command
 char *executable;
@@ -86,7 +87,15 @@ bool executeCommand(char **execArgs, int skipFlag) {
     } else {
         // Child process
         status = execvp(executable, execArgs);
+        #if 1
+            printf("%s", HGRN);
+        #endif
+
         printf("Error: command not found!\n");
+
+        #if 1
+            printf("%s", RESET);
+        #endif
         exit(127);
     }
 
@@ -208,6 +217,7 @@ bool parseBuiltIn(List *lp, int *exitFlag, int skipFlag) {
     char *builtIns[] = {
             "exit",
             "status",   
+            "cd",
             NULL
     };
 
@@ -221,6 +231,22 @@ bool parseBuiltIn(List *lp, int *exitFlag, int skipFlag) {
                 printf("The most recent exit code is: %d\n", exitCode);
                 fflush(stdout);
                 break;
+            case 2:
+                skipFlag = 1;
+                if (isEmpty(*lp)) {
+                    printf("Error: directory not found!\n");
+                    fflush(stdout);
+                    return false;
+                } else {
+                    char *dir = (*lp)->t;
+                    if (chdir(dir) != 0) {
+                        printf("Error: directory not found!\n");
+                        fflush(stdout);
+                        return false;
+                    } else {
+                        (*lp) = (*lp)->next;
+                    }
+                }
             default:
                 break;
             }
