@@ -80,11 +80,11 @@ bool isOperator(char *s) {
  */
 bool parseOptions(List *lp, int skipFlag) {
     int size = 10;
-    char **execArgs = malloc(size * sizeof(char*));
+    char **execArgs = malloc(size * sizeof(*execArgs));
     int cnt = 0;
     while (*lp != NULL && !isOperator((*lp)->t)) {
         // Increase size of array if needed
-        if (cnt == size) {
+        if (cnt == (size - 2)) {
             size *= 2;
             execArgs = realloc(execArgs, size * sizeof(char*));
         }

@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "d:/CompSci/OS",
-      "program": "d:/CompSci/OS/build/Debug/outDebug",
+      "cwd": "d:/CompSci/CodeGoBeepBoop/BeepBoopShell",
+      "program": "d:/CompSci/CodeGoBeepBoop/BeepBoopShell/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
