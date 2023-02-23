@@ -7,6 +7,7 @@
 
 #include "scanner.h"
 #include "bonus.h"
+#include "builtin.h"
 
     // Exit code of the last executed command
 int exitCode = 0;
@@ -144,11 +145,13 @@ bool parseCommand(List *lp, int skipFlag) {
     // Parse options
     char **execArgs;
     if(!parseOptions(lp, &execArgs, skipFlag)) {
+        free(execArgs);
         return false;
     }
     
     // Execute command
     if(!executeCommand(execArgs, executable, skipFlag)) {
+        free(execArgs);
         return false;
     }
 
@@ -220,54 +223,15 @@ bool parseRedirections(List *lp) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the builtin was parsed successfully.
  */
-bool parseBuiltIn(List *lp, int *exitFlag, int skipFlag) {
-    // NULL-terminated array makes it easy to expand this array later
-    // without changing the code at other places.
+bool parseBuiltIn(List *lp, char **builtin, int *exitFlag, int skipFlag) {
     if (skipFlag) {
         return false;
     }
-    char *builtIns[] = {
-            "exit",
-            "status",   
-            "cd",
-            NULL
-    };
-
-    for (int i = 0; builtIns[i] != NULL; i++) {
-        if (acceptToken(lp, builtIns[i])) {
-            switch (i) {
-            case 0:
-                *exitFlag = 1;
-                break;
-            case 1:
-                printf("The most recent exit code is: %d\n", exitCode);
-                fflush(stdout);
-                break;
-            #if BONUS
-            case 2:
-                skipFlag = 1;
-                if (isEmpty(*lp)) {
-                    printf("Error: directory not found!\n");
-                    fflush(stdout);
-                    return false;
-                } else {
-                    char *dir = (*lp)->t;
-                    if (chdir(dir) != 0) {
-                        printf("Error: directory not found!\n");
-                        fflush(stdout);
-                        return false;
-                    } else {
-                        (*lp) = (*lp)->next;
-                    }
-                }
-            #endif
-            default:
-                break;
-            }
-            return true;
-        }
+    if(isBuiltIn((*lp)->t)) {
+        *builtin = (*lp)->t;
+        (*lp) = (*lp)->next;
+        return true;
     }
-
     return false;
 }
 
@@ -281,13 +245,27 @@ bool parseBuiltIn(List *lp, int *exitFlag, int skipFlag) {
  * @return a bool denoting whether the chain was parsed successfully.
  */
 bool parseChain(List *lp, int *exitFlag, int skipFlag) {
-    if (parseBuiltIn(lp, exitFlag, skipFlag)) {
+
+    // Built-in
+    char *builtin;
+    if (parseBuiltIn(lp, &builtin, exitFlag, skipFlag)) {
+        char **execArgs;
+        if(!parseOptions(lp, &execArgs, skipFlag)) {
+            free(execArgs);
+            return false;
+        }
+
+        executeBuiltIn(builtin, execArgs, exitFlag, exitCode);
         if (exitFlag) {
+            free(execArgs);
             return true;
         }
-        char **execArgs;
-        return parseOptions(lp, &execArgs, skipFlag);
+
+        free(execArgs);
+        return true;
     }
+
+    // Pipeline
     if (parsePipeline(lp, skipFlag)) {
         return parseRedirections(lp);
     }
