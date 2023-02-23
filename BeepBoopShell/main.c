@@ -31,10 +31,11 @@ int main(int argc, char *argv[]) {
 //    #endif
 
     // Shell loop
+    int printFlag = 1;
     while (true) {
         #if BONUS
         int color = 0;
-        if (getcwd(cwd, sizeof(cwd)) != NULL) {
+        if (getcwd(cwd, sizeof(cwd)) != NULL && printFlag) {
             for(int i = 0; i < strlen(cwd); i++){
                 if(cwd[i] == '/'){
                     printf("%s", getRainbowColor(color++ % 6));
@@ -44,12 +45,13 @@ int main(int argc, char *argv[]) {
             printf("%s>%s ", BHWHT, RESET);
         }
         #endif
-        inputLine = readInputLine(&exitFlag, history, histIndex, histSize, histTop);// exitFlag will be set to 1 for EOF
+        printFlag = 1;
+        inputLine = readInputLine(&exitFlag, &printFlag, history, histIndex, histSize, histTop);// exitFlag will be set to 1 for EOF
         #if BONUS
-        if (inputLine[0] == '\0') {
-            putchar('\n');
+        if (!printFlag) {
             continue;
         }
+        printFlag = 1;
         if (histTop < histSize) {
             history[histTop] = inputLine;
             histTop++;

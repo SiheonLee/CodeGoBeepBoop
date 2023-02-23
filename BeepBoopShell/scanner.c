@@ -22,8 +22,8 @@ int getch() {
 }
 
 
-char *upArrowPressed(char *history[], int histIndex, int histSize, int histTop, char* s) {
-    if (histIndex > 0 && histIndex <= histSize) {
+char *upArrowPressed(char *history[], int *printFlag, int histIndex, int histSize, int histTop, char* s) {
+    if (histIndex > 0) {
         histIndex--;
         s = history[histIndex];
         printf("%s", s);
@@ -38,9 +38,20 @@ char *upArrowPressed(char *history[], int histIndex, int histSize, int histTop, 
             if (c == 91) {
                 c = getch();
                 if (c == 65) {
-                    return upArrowPressed(history, histIndex, histSize, histTop, s);
+                    if (histIndex == 0) {
+                        *printFlag = 0;
+                        return s;
+                    }
+                    return upArrowPressed(history, printFlag, histIndex, histSize, histTop, s);
                 } else if (c == 66) {
-                    return downArrowPressed(history, histIndex, histSize, histTop, s);
+                    if (histIndex == (histTop - 1)) {
+                        *printFlag = 0;
+                        return s;
+                    }
+                    return downArrowPressed(history, printFlag, histIndex, histSize, histTop, s);
+                } else{
+                    printf("%s", s);
+                    int c = getch();
                 }
             }
         }
@@ -67,7 +78,7 @@ char *upArrowPressed(char *history[], int histIndex, int histSize, int histTop, 
     return s;
 }
 
-char *downArrowPressed(char *history[], int histIndex, int histSize, int histTop, char* s) {
+char *downArrowPressed(char *history[], int *printFlag, int histIndex, int histSize, int histTop, char* s) {
     if (histIndex < histTop - 1) {
 //        printf("histIndex: %d | histTop: %d\n", histIndex, histTop);
         histIndex++;
@@ -84,9 +95,17 @@ char *downArrowPressed(char *history[], int histIndex, int histSize, int histTop
             if (c == 91) {
                 c = getch();
                 if (c == 65) {
-                    return upArrowPressed(history, histIndex, histSize, histTop, s);
+                    return upArrowPressed(history, printFlag, histIndex, histSize, histTop, s);
                 } else if (c == 66) {
-                    return downArrowPressed(history, histIndex, histSize, histTop, s);
+//                    printf("idx: %d | top: %d", histIndex, histTop);
+                    if (histIndex == (histTop-1)) {
+                        *printFlag = 0;
+                        return s;
+                    }
+                    return downArrowPressed(history, printFlag, histIndex, histSize, histTop, s);
+                }  else{
+                    printf("%s", s);
+                    c = getch();
                 }
             }
         }
@@ -119,7 +138,7 @@ char *downArrowPressed(char *history[], int histIndex, int histSize, int histTop
  * Reads an inputline from stdin.
  * @return a string containing the inputline.
  */
-char *readInputLine(int *exitFlag, char *history[], int histIndex, int histSize, int histTop) {
+char *readInputLine(int *exitFlag, int *printFlag, char *history[], int histIndex, int histSize, int histTop) {
     int strLen = INITIAL_STRING_SIZE;
     int c = getch();
     int i = 0;
@@ -135,11 +154,17 @@ char *readInputLine(int *exitFlag, char *history[], int histIndex, int histSize,
         if (c == 91) {
             c = getch();
             if (c == 65) { // up arrow
-                s = upArrowPressed(history, histIndex, histSize, histTop, s);
+                if (histIndex == 0) {
+                    *printFlag = 0;
+                    return s;
+                }
+                s = upArrowPressed(history, printFlag, histIndex, histSize, histTop, s);
             } else if (c == 66) { // down arrow
-                s = downArrowPressed(history, histIndex, histSize, histTop, s);
-            } else {
-//                putchar('\n');
+                if (histIndex == histTop) {
+                    *printFlag = 0;
+                    return s;
+                }
+                s = downArrowPressed(history, printFlag, histIndex, histSize, histTop, s);
             }
         } else {
             putchar(c);

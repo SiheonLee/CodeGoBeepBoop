@@ -12,11 +12,11 @@ typedef struct ListNode {
 
 int getch();
 
-char *readInputLine(int *exitFlag, char *history[], int histIndex, int histSize, int histTop);
+char *readInputLine(int *exitFlag, int *printFlag, char *history[], int histIndex, int histSize, int histTop);
 
-char *upArrowPressed(char *history[], int histIndex, int histSize, int histTop, char* s);
+char *upArrowPressed(char *history[], int *printFlag, int histIndex, int histSize, int histTop, char* s);
 
-char *downArrowPressed(char *history[], int histIndex, int histSize, int histTop, char* s);
+char *downArrowPressed(char *history[], int *printFlag, int histIndex, int histSize, int histTop, char* s);
 
 List getTokenList(char *s);
 
