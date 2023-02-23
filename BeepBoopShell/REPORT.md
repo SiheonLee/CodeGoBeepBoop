@@ -1,5 +1,5 @@
 # Operating Systems Assignment #1: <br>Shell - Command Execution and Composition
-### Andrei Girjoaba -s4716825 <br> Oscar de Francesca -s
+### Andrei Girjoaba -s4716825 <br> Oscar de Francesca -s4773012
 
 <br>
 
