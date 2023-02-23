@@ -10,8 +10,13 @@ typedef struct ListNode {
     List next;
 } ListNode;
 
+int getch();
 
-char *readInputLine(int *exitFlag);
+char *readInputLine(int *exitFlag, char *history[], int histIndex, int histSize, int histTop);
+
+char *upArrowPressed(char *history[], int histIndex, int histSize, int histTop, char* s);
+
+char *downArrowPressed(char *history[], int histIndex, int histSize, int histTop, char* s);
 
 List getTokenList(char *s);
 

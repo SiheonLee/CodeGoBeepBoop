@@ -4,18 +4,125 @@
 #include <ctype.h>
 #include <assert.h>
 #include <stdbool.h>
-
 #include "scanner.h"
+#include "termios.h"
+#include <unistd.h>
+
+int getch() {
+    struct termios oldtc;
+    struct termios newtc;
+    int ch;
+    tcgetattr(STDIN_FILENO, &oldtc);
+    newtc = oldtc;
+    newtc.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newtc);
+    ch=getchar();
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldtc);
+    return ch;
+}
+
+
+char *upArrowPressed(char *history[], int histIndex, int histSize, int histTop, char* s) {
+    if (histIndex > 0 && histIndex <= histSize) {
+        histIndex--;
+        s = history[histIndex];
+        printf("%s", s);
+        int c = getch();
+        // if up arrow is pressed again or down arrow is pressed
+        if (c == 27) {
+            // clear the line
+            for (int i = 0; i < strlen(s); i++) {
+                printf("\b \b");
+            }
+            c = getch();
+            if (c == 91) {
+                c = getch();
+                if (c == 65) {
+                    return upArrowPressed(history, histIndex, histSize, histTop, s);
+                } else if (c == 66) {
+                    return downArrowPressed(history, histIndex, histSize, histTop, s);
+                }
+            }
+        }
+        while (c != '\n') {
+            if (c == 127) { // backspace pressed
+                if (strlen(s) > 0) {
+                    s[strlen(s) - 1] = '\0';
+                    printf("\b \b");
+                } else {
+                    s[strlen(s)] = c;
+                    s[strlen(s) + 1] = '\0';
+                    printf("%c", c);
+                }
+                c = getch();
+            } else {
+                printf("%c", c);
+                s[strlen(s)] = c;
+                s[strlen(s) + 1] = '\0';
+                c = getch();
+            }
+        }
+        printf("\n");
+    }
+    return s;
+}
+
+char *downArrowPressed(char *history[], int histIndex, int histSize, int histTop, char* s) {
+    if (histIndex < histTop - 1) {
+//        printf("histIndex: %d | histTop: %d\n", histIndex, histTop);
+        histIndex++;
+        s = history[histIndex];
+        printf("%s", s);
+        int c = getch();
+        // if down arrow is pressed again
+        if (c == 27) {
+            // clear the line
+            for (int i = 0; i < strlen(s); i++) {
+                printf("\b \b");
+            }
+            c = getch();
+            if (c == 91) {
+                c = getch();
+                if (c == 65) {
+                    return upArrowPressed(history, histIndex, histSize, histTop, s);
+                } else if (c == 66) {
+                    return downArrowPressed(history, histIndex, histSize, histTop, s);
+                }
+            }
+        }
+        while (c != '\n') {
+            if (c == 127) { // backspace pressed
+                if (strlen(s) > 0) {
+                    s[strlen(s) - 1] = '\0';
+                    printf("\b \b");
+                } else {
+                    s[strlen(s)] = c;
+                    s[strlen(s) + 1] = '\0';
+                    printf("%c", c);
+                }
+                c = getch();
+            } else {
+                printf("%c", c);
+                s[strlen(s)] = c;
+                s[strlen(s) + 1] = '\0';
+                c = getch();
+            }
+        }
+        printf("\n");
+    } else {
+        s = "\0";
+    }
+    return s;
+}
 
 /**
  * Reads an inputline from stdin.
  * @return a string containing the inputline.
  */
-char *readInputLine(int *exitFlag) {
+char *readInputLine(int *exitFlag, char *history[], int histIndex, int histSize, int histTop) {
     int strLen = INITIAL_STRING_SIZE;
-    int c = getchar();
+    int c = getch();
     int i = 0;
-
     char *s = malloc((strLen + 1) * sizeof(*s));
     assert(s != NULL);
 
@@ -23,22 +130,61 @@ char *readInputLine(int *exitFlag) {
         *exitFlag = 1;
         s[0] = '\0';
         return s;
+    } else if (c == 27) { // TODO: wrap in bonus
+        c = getch();
+        if (c == 91) {
+            c = getch();
+            if (c == 65) { // up arrow
+                s = upArrowPressed(history, histIndex, histSize, histTop, s);
+            } else if (c == 66) { // down arrow
+                s = downArrowPressed(history, histIndex, histSize, histTop, s);
+            } else {
+//                putchar('\n');
+            }
+        } else {
+            putchar(c);
+        }
+        return s;
     }
 
     bool quoteStarted = false;
-    while (c != '\n' || quoteStarted) { // Ensure that newlines in strings are accepted
+    while (c != '\n' || quoteStarted) {// Ensure that newlines in strings are accepted
         if (c == '\"') {
             quoteStarted = !quoteStarted;
         }
-        s[i++] = c;
+        if (c == 127) {
+            if (i == 0) {
+                c = getch();
+                continue;
+            }
+            if (i > 0) {
+                s[i - 1] = '\0';
+                i--;
+                printf("\b \b");
+            } else {
+                s[i] = c;
+                s[i + 1] = '\0';
+                printf("%c", c);
+            }
+            c = getch();
+            continue;
+        } else {
+//            i++;
+//            s[strlen(s)] = c;
+            s[i++] = c;
+//            printf("\n%s\n",
+//            s);
+            putchar(c);
+        }
 
         if (i >= strLen) { // Resize the string if necessary
             strLen = 2 * strLen;
             s = realloc(s, (strLen + 1) * sizeof(*s));
             assert(s != NULL);
         }
-        c = getchar();
+        c = getch();
     }
+    putchar('\n');
     s[i] = '\0';
     return s;
 }

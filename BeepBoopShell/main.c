@@ -21,9 +21,14 @@ int main(int argc, char *argv[]) {
     setbuf(stdin, NULL);
     setbuf(stdout, NULL);
 
-    #if BONUS
+//    #if BONUS
     char cwd[200];
-    #endif
+    int histSize = 100;
+    char *history[histSize];
+    int histIndex = 0;
+    int histTop = 0;
+
+//    #endif
 
     // Shell loop
     while (true) {
@@ -39,9 +44,29 @@ int main(int argc, char *argv[]) {
             printf("%s>%s ", BHWHT, RESET);
         }
         #endif
-        inputLine = readInputLine(&exitFlag); // exitFlag will be set to 1 for EOF
+        inputLine = readInputLine(&exitFlag, history, histIndex, histSize, histTop);// exitFlag will be set to 1 for EOF
+        #if BONUS
+        if (inputLine[0] == '\0') {
+            putchar('\n');
+            continue;
+        }
+        if (histTop < histSize) {
+            history[histTop] = inputLine;
+            histTop++;
+        } else {
+            for (int i = 0; i < histSize - 1; i++) {
+                history[i] = history[i + 1];
+            }
+            history[histSize - 1] = inputLine;
+        }
+        histIndex = histTop;
+
+
+        #endif
         tokenList = getTokenList(inputLine);
+
         List startTokenList = tokenList;
+
 
         bool parsedSuccessfully = parseInputLine(&tokenList, &exitFlag, 0); // exitFlag will be set to 1 for exit command
         if (!(tokenList == NULL && parsedSuccessfully)) {
@@ -56,12 +81,15 @@ int main(int argc, char *argv[]) {
             #endif
         }
 
-        free(inputLine);
         freeTokenList(startTokenList);
         if(exitFlag){
             break;
         }
+        // free history
+//        for (int i = 0; i < histTop; i++) {
+//            free(history[i]);
+//        }
     }
-    
+
     return 0;
 }
