@@ -8,8 +8,6 @@
 #include "scanner.h"
 #include "bonus.h"
 
-    // The executable to be executed in the last parsed command
-char *executable;
     // Exit code of the last executed command
 int exitCode = 0;
 
@@ -34,8 +32,8 @@ bool acceptToken(List *lp, char *ident) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the executable was parsed successfully.
  */
-bool parseExecutable(List *lp) {
-    executable = (*lp)->t;
+bool parseExecutable(List *lp, char **executable) {
+    *executable = (*lp)->t;
     return true;
 }
 
@@ -71,10 +69,10 @@ bool isOperator(char *s) {
  * @param skipFlag if true, the command will not be executed
  * @return true
  */
-bool executeCommand(char **execArgs, int skipFlag) {
+bool executeCommand(char **execArgs, char *executable, int skipFlag) {
     int status;
     if (skipFlag) {
-        free(execArgs);
+        // free(execArgs);
         return true;
     }
 
@@ -99,7 +97,7 @@ bool executeCommand(char **execArgs, int skipFlag) {
         exit(127);
     }
 
-    free(execArgs);
+    //free(execArgs);
     return true;
 }
 
@@ -109,27 +107,27 @@ bool executeCommand(char **execArgs, int skipFlag) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the options were parsed successfully.
  */
-bool parseOptions(List *lp, int skipFlag) {
-    
+bool parseOptions(List *lp, char *executable, char ***myArgs, int skipFlag) {
     // Store all the options in an arguments array
     int size = 10;
-    char **execArgs = malloc(size * sizeof(*execArgs));
+    *myArgs = malloc(size * sizeof(char*));
     int cnt = 0;
     while (*lp != NULL && !isOperator((*lp)->t)) {
         // Increase size of array if needed
         if (cnt == (size - 2)) {
             size *= 4;
-            execArgs = realloc(execArgs, size * sizeof(char*));
+            *myArgs = realloc(*myArgs, size * sizeof(char*));
         }
 
         // Store argument in array
-        execArgs[cnt] = (*lp)->t;
+        myArgs[0][cnt] = (*lp)->t;
         cnt++;
         (*lp) = (*lp)->next;
     }
-    execArgs[cnt] = NULL;
+    myArgs[0][cnt] = NULL;
 
-    return executeCommand(execArgs, skipFlag);
+    executeCommand(*myArgs, executable, skipFlag);
+    return true;
 }
 
 /**
@@ -141,9 +139,17 @@ bool parseOptions(List *lp, int skipFlag) {
  * @return a bool denoting whether the command was parsed successfully.
  */
 bool parseCommand(List *lp, int skipFlag) {
-    // 
+    char *executable;
+    if(!parseExecutable(lp, &executable)) {
+        return false;
+    }
 
-    return parseExecutable(lp) && parseOptions(lp, skipFlag);
+    char **execArgs;
+    if(!parseOptions(lp, executable, &execArgs, skipFlag)) {
+        return false;
+    }
+    free(execArgs);
+    return true;
 }
 
 /**
@@ -275,7 +281,9 @@ bool parseChain(List *lp, int *exitFlag, int skipFlag) {
         if (exitFlag) {
             return true;
         }
-        return parseOptions(lp, skipFlag);
+        char *executable;
+        char **execArgs;
+        return parseOptions(lp, executable, &execArgs, skipFlag);
     }
     if (parsePipeline(lp, skipFlag)) {
         return parseRedirections(lp);
