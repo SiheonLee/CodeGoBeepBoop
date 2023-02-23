@@ -72,7 +72,6 @@ bool isOperator(char *s) {
 bool executeCommand(char **execArgs, char *executable, int skipFlag) {
     int status;
     if (skipFlag) {
-        // free(execArgs);
         return true;
     }
 
@@ -97,7 +96,6 @@ bool executeCommand(char **execArgs, char *executable, int skipFlag) {
         exit(127);
     }
 
-    //free(execArgs);
     return true;
 }
 
@@ -107,7 +105,7 @@ bool executeCommand(char **execArgs, char *executable, int skipFlag) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the options were parsed successfully.
  */
-bool parseOptions(List *lp, char *executable, char ***myArgs, int skipFlag) {
+bool parseOptions(List *lp, char ***myArgs, int skipFlag) {
     // Store all the options in an arguments array
     int size = 10;
     *myArgs = malloc(size * sizeof(char*));
@@ -120,13 +118,11 @@ bool parseOptions(List *lp, char *executable, char ***myArgs, int skipFlag) {
         }
 
         // Store argument in array
-        myArgs[0][cnt] = (*lp)->t;
+        (*myArgs)[cnt] = (*lp)->t;
         cnt++;
         (*lp) = (*lp)->next;
     }
-    myArgs[0][cnt] = NULL;
-
-    executeCommand(*myArgs, executable, skipFlag);
+    (*myArgs)[cnt] = NULL;
     return true;
 }
 
@@ -139,15 +135,23 @@ bool parseOptions(List *lp, char *executable, char ***myArgs, int skipFlag) {
  * @return a bool denoting whether the command was parsed successfully.
  */
 bool parseCommand(List *lp, int skipFlag) {
+    // Parse executable
     char *executable;
     if(!parseExecutable(lp, &executable)) {
         return false;
     }
 
+    // Parse options
     char **execArgs;
-    if(!parseOptions(lp, executable, &execArgs, skipFlag)) {
+    if(!parseOptions(lp, &execArgs, skipFlag)) {
         return false;
     }
+    
+    // Execute command
+    if(!executeCommand(execArgs, executable, skipFlag)) {
+        return false;
+    }
+
     free(execArgs);
     return true;
 }
@@ -281,9 +285,8 @@ bool parseChain(List *lp, int *exitFlag, int skipFlag) {
         if (exitFlag) {
             return true;
         }
-        char *executable;
         char **execArgs;
-        return parseOptions(lp, executable, &execArgs, skipFlag);
+        return parseOptions(lp, &execArgs, skipFlag);
     }
     if (parsePipeline(lp, skipFlag)) {
         return parseRedirections(lp);
