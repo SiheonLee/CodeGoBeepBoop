@@ -87,13 +87,13 @@ bool executeCommand(char **execArgs, int skipFlag) {
     } else {
         // Child process
         status = execvp(executable, execArgs);
-        #if 1
-            printf("%s", HGRN);
+        #if BONUS
+            printf("%s", BHRED);
         #endif
 
         printf("Error: command not found!\n");
 
-        #if 1
+        #if BONUS
             printf("%s", RESET);
         #endif
         exit(127);
@@ -141,6 +141,8 @@ bool parseOptions(List *lp, int skipFlag) {
  * @return a bool denoting whether the command was parsed successfully.
  */
 bool parseCommand(List *lp, int skipFlag) {
+    // 
+
     return parseExecutable(lp) && parseOptions(lp, skipFlag);
 }
 
@@ -231,6 +233,7 @@ bool parseBuiltIn(List *lp, int *exitFlag, int skipFlag) {
                 printf("The most recent exit code is: %d\n", exitCode);
                 fflush(stdout);
                 break;
+            #if BONUS
             case 2:
                 skipFlag = 1;
                 if (isEmpty(*lp)) {
@@ -247,6 +250,7 @@ bool parseBuiltIn(List *lp, int *exitFlag, int skipFlag) {
                         (*lp) = (*lp)->next;
                     }
                 }
+            #endif
             default:
                 break;
             }

@@ -6,6 +6,7 @@
 #include <limits.h>
 #include "scanner.h"
 #include "shell.h"
+#include "bonus.h"
 
 /**
  * @brief Main function of the shell. Runs the shell loop.
@@ -31,7 +32,7 @@ int main(int argc, char *argv[]) {
         if (getcwd(cwd, sizeof(cwd)) != NULL) {
             for(int i = 0; i < strlen(cwd); i++){
                 if(cwd[i] == '/'){
-                    printf("%s", rainbow[color++ % 6]);
+                    printf("%s", getRainbowColor(color++ % 6));
                 }
                 printf("%c", cwd[i]);
             }
