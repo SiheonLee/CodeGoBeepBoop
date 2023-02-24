@@ -97,7 +97,6 @@ char *downArrowPressed(char *history[], int *printFlag, int histIndex, int histS
                 if (c == 65) {
                     return upArrowPressed(history, printFlag, histIndex, histSize, histTop, s);
                 } else if (c == 66) {
-//                    printf("idx: %d | top: %d", histIndex, histTop);
                     if (histIndex == (histTop-1)) {
                         *printFlag = 0;
                         return s;
@@ -134,11 +133,13 @@ char *downArrowPressed(char *history[], int *printFlag, int histIndex, int histS
     return s;
 }
 
+
 /**
  * Reads an inputline from stdin.
  * @return a string containing the inputline.
  */
 char *readInputLine(int *exitFlag, int *printFlag, char *history[], int histIndex, int histSize, int histTop) {
+    #if BONUS
     int strLen = INITIAL_STRING_SIZE;
     int c = getch();
     int i = 0;
@@ -194,11 +195,7 @@ char *readInputLine(int *exitFlag, int *printFlag, char *history[], int histInde
             c = getch();
             continue;
         } else {
-//            i++;
-//            s[strlen(s)] = c;
             s[i++] = c;
-//            printf("\n%s\n",
-//            s);
             putchar(c);
         }
 
@@ -212,6 +209,39 @@ char *readInputLine(int *exitFlag, int *printFlag, char *history[], int histInde
     putchar('\n');
     s[i] = '\0';
     return s;
+
+    #else
+
+    int strLen = INITIAL_STRING_SIZE;
+    int c = getchar();
+    int i = 0;
+
+    char *s = malloc((strLen + 1) * sizeof(*s));
+    assert(s != NULL);
+
+    if (c == EOF) {
+        *exitFlag = 1;
+        s[0] = '\0';
+        return s;
+    }
+
+    bool quoteStarted = false;
+    while (c != '\n' || quoteStarted) { // Ensure that newlines in strings are accepted
+        if (c == '\"') {
+            quoteStarted = !quoteStarted;
+        }
+        s[i++] = c;
+
+        if (i >= strLen) { // Resize the string if necessary
+            strLen = 2 * strLen;
+            s = realloc(s, (strLen + 1) * sizeof(*s));
+            assert(s != NULL);
+        }
+        c = getchar();
+    }
+    s[i] = '\0';
+    return s;
+    #endif
 }
 
 /**

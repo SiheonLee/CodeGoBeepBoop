@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
         #endif
         printFlag = 1;
         inputLine = readInputLine(&exitFlag, &printFlag, history, histIndex, histSize, histTop);// exitFlag will be set to 1 for EOF
-        #if BONUS
+        // #if BONUS
         if (!printFlag) {
             continue;
         }
@@ -64,11 +64,10 @@ int main(int argc, char *argv[]) {
         histIndex = histTop;
 
 
-        #endif
+        // #endif
         tokenList = getTokenList(inputLine);
 
         List startTokenList = tokenList;
-
 
         bool parsedSuccessfully = parseInputLine(&tokenList, &exitFlag, 0); // exitFlag will be set to 1 for exit command
         if (!(tokenList == NULL && parsedSuccessfully)) {

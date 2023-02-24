@@ -3,6 +3,8 @@
 
 #define INITIAL_STRING_SIZE 10
 
+#include "bonus.h"
+
 typedef struct ListNode *List;
 
 typedef struct ListNode {
