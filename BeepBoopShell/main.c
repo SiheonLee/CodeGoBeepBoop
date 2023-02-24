@@ -46,8 +46,12 @@ int main(int argc, char *argv[]) {
         }
         #endif
         printFlag = 1;
-        inputLine = readInputLine(&exitFlag, &printFlag, history, histIndex, histSize, histTop);// exitFlag will be set to 1 for EOF
-        // #if BONUS
+        #if BONUS
+            inputLine = readInputLineBonus(&exitFlag, &printFlag, history, histIndex, histSize, histTop); // exitFlag will be set to 1 for EOF
+        #else
+            inputLine = readInputLine(&exitFlag); // exitFlag will be set to 1 for EOF
+        #endif
+        #if BONUS
         if (!printFlag) {
             continue;
         }
@@ -62,9 +66,7 @@ int main(int argc, char *argv[]) {
             history[histSize - 1] = inputLine;
         }
         histIndex = histTop;
-
-
-        // #endif
+        #endif
         tokenList = getTokenList(inputLine);
 
         List startTokenList = tokenList;
@@ -83,14 +85,19 @@ int main(int argc, char *argv[]) {
         }
 
         freeTokenList(startTokenList);
+        #if !BONUS
+        free(inputLine);
+        #endif
         if(exitFlag){
             break;
         }
 //         free history
     }
+    #if BONUS
     for (int i = 0; i < histTop; i++) {
         free(history[i]);
     }
+    #endif
 
     return 0;
 }

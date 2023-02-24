@@ -8,6 +8,12 @@
 #include "termios.h"
 #include <unistd.h>
 
+/**
+ * @brief Our own implementation of the getch() function.
+ *        This function is used to read a single character from the terminal without echoing it.
+ * 
+ * @return the character that was pressed.
+ */
 int getch() {
     struct termios oldtc;
     struct termios newtc;
@@ -21,112 +27,115 @@ int getch() {
     return ch;
 }
 
+/**
+ * @brief If the delete button is pressed deletes a character from the current string
+ *        and prints a backspace character.
+ * 
+ * @param s the string to be modified.
+ * @param c the last pressed character.
+ */
+void deletePressed(char *s, char c) {
+    while (c != '\n') {
+        if (c == 127) { // backspace pressed
+            if (strlen(s) > 0) {
+                s[strlen(s) - 1] = '\0';
+                printf("\b \b");
+            } else {
+                s[strlen(s)] = c;
+                s[strlen(s) + 1] = '\0';
+                printf("%c", c);
+            }
+            c = getch();
+        } else {
+            printf("%c", c);
+            s[strlen(s)] = c;
+            s[strlen(s) + 1] = '\0';
+            c = getch();
+        }
+    }
+    printf("\n");
+}
 
+/**
+ * @brief Acts as a helper function for upArrowPressed and downArrowPressed.
+ * 
+ * @param history the history of previously executed commands.
+ * @param printFlag weather or not to print the current line.
+ * @param histIndex the current index in the history array.
+ * @param histSize the size of the history array.
+ * @param histTop the maximum index in the history array.
+ * @param s the current string.
+ * @return final string
+ */
+char *manageArrowPressed(char *history[], int *printFlag, int histIndex, int histSize, int histTop, char* s) {
+    s = history[histIndex];
+    printf("%s", s);
+    int c = getch();
+    // if up arrow is pressed again or down arrow is pressed
+    if (c == 27) {
+        // clear the line
+        for (int i = 0; i < strlen(s); i++) {
+            printf("\b \b");
+        }
+        c = getch();
+        if (c == 91) {
+            c = getch();
+            if (c == 65) {
+                if (histIndex == 0) {
+                    *printFlag = 0;
+                    return s;
+                }
+                return upArrowPressed(history, printFlag, histIndex, histSize, histTop, s);
+            } else if (c == 66) {
+                if (histIndex == (histTop - 1)) {
+                    *printFlag = 0;
+                    return s;
+                }
+                return downArrowPressed(history, printFlag, histIndex, histSize, histTop, s);
+            } else{
+                printf("%s", s);
+                int c = getch();
+            }
+        }
+    }
+    deletePressed(s, c);
+    return s;
+}
+
+/**
+ * @brief Handles the up arrow being pressed on the keyboard.
+ * 
+ * @param history the history of previously executed commands.
+ * @param printFlag weather or not to print the current line.
+ * @param histIndex the current index in the history array.
+ * @param histSize the size of the history array.
+ * @param histTop the maximum index in the history array.
+ * @param s the current string.
+ * @return final string
+ */
 char *upArrowPressed(char *history[], int *printFlag, int histIndex, int histSize, int histTop, char* s) {
     if (histIndex > 0) {
         histIndex--;
-        s = history[histIndex];
-        printf("%s", s);
-        int c = getch();
-        // if up arrow is pressed again or down arrow is pressed
-        if (c == 27) {
-            // clear the line
-            for (int i = 0; i < strlen(s); i++) {
-                printf("\b \b");
-            }
-            c = getch();
-            if (c == 91) {
-                c = getch();
-                if (c == 65) {
-                    if (histIndex == 0) {
-                        *printFlag = 0;
-                        return s;
-                    }
-                    return upArrowPressed(history, printFlag, histIndex, histSize, histTop, s);
-                } else if (c == 66) {
-                    if (histIndex == (histTop - 1)) {
-                        *printFlag = 0;
-                        return s;
-                    }
-                    return downArrowPressed(history, printFlag, histIndex, histSize, histTop, s);
-                } else{
-                    printf("%s", s);
-                    int c = getch();
-                }
-            }
-        }
-        while (c != '\n') {
-            if (c == 127) { // backspace pressed
-                if (strlen(s) > 0) {
-                    s[strlen(s) - 1] = '\0';
-                    printf("\b \b");
-                } else {
-                    s[strlen(s)] = c;
-                    s[strlen(s) + 1] = '\0';
-                    printf("%c", c);
-                }
-                c = getch();
-            } else {
-                printf("%c", c);
-                s[strlen(s)] = c;
-                s[strlen(s) + 1] = '\0';
-                c = getch();
-            }
-        }
-        printf("\n");
+        s = manageArrowPressed(history, printFlag, histIndex, histSize, histTop, s);
     }
     return s;
 }
 
+/**
+ * @brief Handles the down arrow being pressed on the keyboard.
+ * 
+ * @param history the history of previously executed commands.
+ * @param printFlag weather or not to print the current line.
+ * @param histIndex the current index in the history array.
+ * @param histSize the size of the history array.
+ * @param histTop the maximum index in the history array.
+ * @param s the current string.
+ * @return final string
+ */
 char *downArrowPressed(char *history[], int *printFlag, int histIndex, int histSize, int histTop, char* s) {
     if (histIndex < histTop - 1) {
-//        printf("histIndex: %d | histTop: %d\n", histIndex, histTop);
         histIndex++;
-        s = history[histIndex];
-        printf("%s", s);
-        int c = getch();
-        // if down arrow is pressed again
-        if (c == 27) {
-            // clear the line
-            for (int i = 0; i < strlen(s); i++) {
-                printf("\b \b");
-            }
-            c = getch();
-            if (c == 91) {
-                c = getch();
-                if (c == 65) {
-                    return upArrowPressed(history, printFlag, histIndex, histSize, histTop, s);
-                } else if (c == 66) {
-                    if (histIndex == (histTop-1)) {
-                        *printFlag = 0;
-                        return s;
-                    }
-                    return downArrowPressed(history, printFlag, histIndex, histSize, histTop, s);
-                }  else{
-                    printf("%s", s);
-                    c = getch();
-                }
-            }
-        }
-        while (c != '\n') {
-            if (c == 127) { // backspace pressed
-                if (strlen(s) > 0) {
-                    s[strlen(s) - 1] = '\0';
-                    printf("\b \b");
-                } else {
-                    s[strlen(s)] = c;
-                    s[strlen(s) + 1] = '\0';
-                    printf("%c", c);
-                }
-                c = getch();
-            } else {
-                printf("%c", c);
-                s[strlen(s)] = c;
-                s[strlen(s) + 1] = '\0';
-                c = getch();
-            }
-        }
-        printf("\n");
+        s = manageArrowPressed(history, printFlag, histIndex, histSize, histTop, s);
     } else {
         s = "\0";
     }
@@ -138,8 +147,7 @@ char *downArrowPressed(char *history[], int *printFlag, int histIndex, int histS
  * Reads an inputline from stdin.
  * @return a string containing the inputline.
  */
-char *readInputLine(int *exitFlag, int *printFlag, char *history[], int histIndex, int histSize, int histTop) {
-    #if BONUS
+char *readInputLineBonus(int *exitFlag, int *printFlag, char *history[], int histIndex, int histSize, int histTop) {
     int strLen = INITIAL_STRING_SIZE;
     int c = getch();
     int i = 0;
@@ -150,7 +158,7 @@ char *readInputLine(int *exitFlag, int *printFlag, char *history[], int histInde
         *exitFlag = 1;
         s[0] = '\0';
         return s;
-    } else if (c == 27) { // TODO: wrap in bonus
+    } else if (c == 27) {
         c = getch();
         if (c == 91) {
             c = getch();
@@ -209,9 +217,13 @@ char *readInputLine(int *exitFlag, int *printFlag, char *history[], int histInde
     putchar('\n');
     s[i] = '\0';
     return s;
+}
 
-    #else
-
+/**
+ * Reads an inputline from stdin.
+ * @return a string containing the inputline.
+ */
+char *readInputLine(int *exitFlag) {
     int strLen = INITIAL_STRING_SIZE;
     int c = getchar();
     int i = 0;
@@ -241,7 +253,6 @@ char *readInputLine(int *exitFlag, int *printFlag, char *history[], int histInde
     }
     s[i] = '\0';
     return s;
-    #endif
 }
 
 /**

@@ -14,7 +14,8 @@ typedef struct ListNode {
 
 int getch();
 
-char *readInputLine(int *exitFlag, int *printFlag, char *history[], int histIndex, int histSize, int histTop);
+char *readInputLineBonus(int *exitFlag, int *printFlag, char *history[], int histIndex, int histSize, int histTop);
+char *readInputLine(int *exitFlag);
 
 char *upArrowPressed(char *history[], int *printFlag, int histIndex, int histSize, int histTop, char* s);
 

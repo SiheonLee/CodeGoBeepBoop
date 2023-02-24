@@ -19,7 +19,7 @@
 #define BHRED "\x1B[1;91m"
 #define BHWHT "\x1B[1;97m"
 
-#define BONUS 1
+#define BONUS 0
 
 
 char* getRainbowColor(int i);
