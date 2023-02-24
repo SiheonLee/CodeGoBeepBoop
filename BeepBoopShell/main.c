@@ -87,10 +87,10 @@ int main(int argc, char *argv[]) {
         if(exitFlag){
             break;
         }
-        // free history
-//        for (int i = 0; i < histTop; i++) {
-//            free(history[i]);
-//        }
+//         free history
+    }
+    for (int i = 0; i < histTop; i++) {
+        free(history[i]);
     }
 
     return 0;
