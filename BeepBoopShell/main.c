@@ -22,12 +22,12 @@ int main(int argc, char *argv[]) {
     setbuf(stdin, NULL);
     setbuf(stdout, NULL);
 
-    #if BONUS
+//    #if BONUS
     char cwd[200];
     History hist;
     hist.index = 0;
     hist.top = 0;
-    #endif
+//    #endif
 
     // Shell loop
     while (true) {
