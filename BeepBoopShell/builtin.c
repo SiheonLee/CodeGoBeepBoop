@@ -62,39 +62,39 @@ bool executeStatus(int exitCode) {
  */
 bool executeCD(char *args[]) {
     if (args[0] == NULL) {
-        #if BONUS
+        #if EXT_PROMPT
             printf("%s", BHRED);
         #endif
 
         printf("cd: no arguments\n");
 
-        #if BONUS
+        #if EXT_PROMPT
             printf("%s", RESET);
         #endif
         return false;
     }
 
     if (args[1] != NULL) {
-        #if BONUS
+        #if EXT_PROMPT
             printf("%s", BHRED);
         #endif
 
         printf("cd: too many arguments\n");
 
-        #if BONUS
+        #if EXT_PROMPT
             printf("%s", RESET);
         #endif
         return false;
     }
 
     if (chdir(args[0]) == -1) {
-        #if BONUS
+        #if EXT_PROMPT
             printf("%s", BHRED);
         #endif
 
         printf("cd: %s: No such file or directory\n", args[0]);
 
-        #if BONUS
+        #if EXT_PROMPT
             printf("%s", RESET);
         #endif
         return false;

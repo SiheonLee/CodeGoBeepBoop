@@ -22,16 +22,14 @@ int main(int argc, char *argv[]) {
     setbuf(stdin, NULL);
     setbuf(stdout, NULL);
 
-//    #if BONUS
     char cwd[200];
     History hist;
     hist.index = 0;
     hist.top = 0;
-//    #endif
 
     // Shell loop
     while (true) {
-        #if BONUS
+        #if EXT_PROMPT
         int color = 0;
         if (getcwd(cwd, sizeof(cwd)) != NULL) {
             for(int i = 0; i < strlen(cwd); i++){
@@ -44,7 +42,7 @@ int main(int argc, char *argv[]) {
         }
         #endif
         inputLine = readInputLine(&exitFlag); // exitFlag will be set to 1 for EOF
-        #if BONUS
+        #if EXT_PROMPT
         addInputToHistory(&hist, inputLine);
 
 #endif
@@ -53,18 +51,18 @@ int main(int argc, char *argv[]) {
 
         bool parsedSuccessfully = parseInputLine(&tokenList, &exitFlag, 0, hist); // exitFlag will be set to 1 for exit command
         if (!(tokenList == NULL && parsedSuccessfully)) {
-            #if BONUS
+            #if EXT_PROMPT
                 printf("%s", HGRN);
             #endif
 
             printf("Error: invalid syntax!\n");
 
-            #if BONUS
+            #if EXT_PROMPT
                 printf("%s", RESET);
             #endif
         }
 
-        #if !BONUS
+        #if !EXT_PROMPT
         free(inputLine);
         #endif
         freeTokenList(startTokenList);
@@ -73,7 +71,7 @@ int main(int argc, char *argv[]) {
         }
     }
     // free history
-    #if BONUS
+    #if EXT_PROMPT
     for(int i = 0; i < hist.top; i++){
         free(hist.arr[i]);
     }

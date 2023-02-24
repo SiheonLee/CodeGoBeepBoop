@@ -85,13 +85,13 @@ bool executeCommand(char **execArgs, char *executable, int skipFlag) {
     } else {
         // Child process
         status = execvp(executable, execArgs);
-        #if BONUS
+        #if EXT_PROMPT
             printf("%s", BHRED);
         #endif
 
         printf("Error: command not found!\n");
 
-        #if BONUS
+        #if EXT_PROMPT
             printf("%s", RESET);
         #endif
         exit(127);
