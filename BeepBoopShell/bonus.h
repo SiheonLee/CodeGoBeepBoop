@@ -20,7 +20,7 @@
 #define BHRED "\x1B[1;91m"
 #define BHWHT "\x1B[1;97m"
 
-#define BONUS 0
+#define BONUS 1
 
 
 void printCurrentDirectory(int printFlag);
