@@ -9,7 +9,7 @@
 #include "bonus.h"
 #include "builtin.h"
 
-    // Exit code of the last executed command
+// Exit code of the last executed command
 int exitCode = 0;
 
 /**
@@ -244,7 +244,7 @@ bool parseBuiltIn(List *lp, char **builtin, int *exitFlag, int skipFlag) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the chain was parsed successfully.
  */
-bool parseChain(List *lp, int *exitFlag, int skipFlag) {
+bool parseChain(List *lp, int *exitFlag, int skipFlag, History hist) {
 
     // Built-in
     char *builtin;
@@ -255,7 +255,7 @@ bool parseChain(List *lp, int *exitFlag, int skipFlag) {
             return false;
         }
 
-        executeBuiltIn(builtin, execArgs, exitFlag, exitCode);
+        executeBuiltIn(builtin, execArgs, exitFlag, exitCode, hist);
         if (exitFlag) {
             free(execArgs);
             return true;
@@ -285,12 +285,12 @@ bool parseChain(List *lp, int *exitFlag, int skipFlag) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the inputline was parsed successfully.
  */
-bool parseInputLine(List *lp, int *exitFlag, int skipFlag) {
+bool parseInputLine(List *lp, int *exitFlag, int skipFlag, History hist) {
     if (isEmpty(*lp)) {
         return true;
     }
 
-    if (!parseChain(lp, exitFlag, skipFlag)) {
+    if (!parseChain(lp, exitFlag, skipFlag, hist)) {
         return false;
     }
 
@@ -301,14 +301,14 @@ bool parseInputLine(List *lp, int *exitFlag, int skipFlag) {
         if (exitCode != 0) {
             skipFlag = 1;
         }
-        return parseInputLine(lp, exitFlag, skipFlag);
+        return parseInputLine(lp, exitFlag, skipFlag, hist);
     } else if (acceptToken(lp, "||")) {
         if (exitCode == 0) {
             skipFlag = 1;
         }
-        return parseInputLine(lp, exitFlag, skipFlag);
+        return parseInputLine(lp, exitFlag, skipFlag, hist);
     } else if (acceptToken(lp, ";")) {
-        return parseInputLine(lp, exitFlag, skipFlag);
+        return parseInputLine(lp, exitFlag, skipFlag, hist);
     }
 
     return true;

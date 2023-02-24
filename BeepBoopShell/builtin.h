@@ -6,8 +6,10 @@
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include "history.h"
+
 
 bool isBuiltIn(char *s);
-int executeBuiltIn(char *builtin, char *args[], int *exitFlag, int exitCode);
+int executeBuiltIn(char *builtin, char *args[], int *exitFlag, int exitCode, History hist);
 
 #endif

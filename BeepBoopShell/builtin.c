@@ -11,6 +11,7 @@
 
 #include "builtin.h"
 #include "bonus.h"
+#include "history.h"
 
 #define BUILTIN_NOT_FOUND 126
 #define BUILTIN_EXECUTED 0
@@ -29,6 +30,7 @@ bool isBuiltIn(char *s) {
             "exit",
             "status",   
             "cd",
+            "hist",
             NULL
     };
 
@@ -110,7 +112,7 @@ bool executeCD(char *args[]) {
  * @param exitCode the status code of the previous command.
  * @return the status code of the execution of the built-in command.
  */
-int executeBuiltIn(char *builtin, char *args[], int *exitFlag, int exitCode) {
+int executeBuiltIn(char *builtin, char *args[], int *exitFlag, int exitCode, History hist) {
     if (strcmp(builtin, "exit") == 0) {
         *exitFlag = 1;
         return BUILTIN_EXECUTED;
@@ -124,7 +126,12 @@ int executeBuiltIn(char *builtin, char *args[], int *exitFlag, int exitCode) {
     if (strcmp(builtin, "cd") == 0) {
         if (executeCD(args)) return BUILTIN_EXECUTED;
         return BUILTIN_FAILED;
-    } 
+    }
+
+    if (strcmp(builtin, "hist") == 0) {
+        if (printHistory(hist, args)) return BUILTIN_EXECUTED;
+        return BUILTIN_FAILED;
+    }
 
     return BUILTIN_NOT_FOUND;
 }
