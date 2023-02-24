@@ -18,3 +18,17 @@ char *getRainbowColor(int i) {
             return WHT;
     }
 }
+
+void printCurrentDirectory(int printFlag) {
+    char cwd[200];
+    int color = 0;
+        if (getcwd(cwd, sizeof(cwd)) != NULL && printFlag) {
+            for(int i = 0; i < strlen(cwd); i++){
+                if(cwd[i] == '/'){
+                    printf("%s", getRainbowColor(color++ % 6));
+                }
+                printf("%c", cwd[i]);
+            }
+            printf("%s>%s ", BHWHT, RESET);
+        }
+}

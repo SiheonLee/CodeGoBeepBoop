@@ -6,6 +6,7 @@
 #include <limits.h>
 #include "scanner.h"
 #include "shell.h"
+#include "history.h"
 #include "bonus.h"
 
 /**
@@ -21,56 +22,44 @@ int main(int argc, char *argv[]) {
     setbuf(stdin, NULL);
     setbuf(stdout, NULL);
 
-//    #if BONUS
-    char cwd[200];
+    #if BONUS
     int histSize = 100;
     char *history[histSize];
     int histIndex = 0;
     int histTop = 0;
-
-//    #endif
+    #endif
 
     // Shell loop
     int printFlag = 1;
     while (true) {
+        // Print the current directory
         #if BONUS
-        int color = 0;
-        if (getcwd(cwd, sizeof(cwd)) != NULL && printFlag) {
-            for(int i = 0; i < strlen(cwd); i++){
-                if(cwd[i] == '/'){
-                    printf("%s", getRainbowColor(color++ % 6));
-                }
-                printf("%c", cwd[i]);
-            }
-            printf("%s>%s ", BHWHT, RESET);
-        }
+        printCurrentDirectory(printFlag);
         #endif
+
         printFlag = 1;
+
+        // Read the input line
         #if BONUS
-            inputLine = readInputLineBonus(&exitFlag, &printFlag, history, histIndex, histSize, histTop); // exitFlag will be set to 1 for EOF
+        inputLine = readInputLineBonus(&exitFlag, &printFlag, history, histIndex, histSize, histTop); // exitFlag will be set to 1 for EOF
         #else
-            inputLine = readInputLine(&exitFlag); // exitFlag will be set to 1 for EOF
+        inputLine = readInputLine(&exitFlag); // exitFlag will be set to 1 for EOF
         #endif
+
+        // Add to history
         #if BONUS
         if (!printFlag) {
             continue;
         }
         printFlag = 1;
-        if (histTop < histSize) {
-            history[histTop] = inputLine;
-            histTop++;
-        } else {
-            for (int i = 0; i < histSize - 1; i++) {
-                history[i] = history[i + 1];
-            }
-            history[histSize - 1] = inputLine;
-        }
-        histIndex = histTop;
+        addInputToHistory(histSize, history, &histIndex, &histTop, inputLine);
         #endif
-        tokenList = getTokenList(inputLine);
 
+        // Get the token list
+        tokenList = getTokenList(inputLine);
         List startTokenList = tokenList;
 
+        // Parse the input line
         bool parsedSuccessfully = parseInputLine(&tokenList, &exitFlag, 0); // exitFlag will be set to 1 for exit command
         if (!(tokenList == NULL && parsedSuccessfully)) {
             #if BONUS
@@ -85,14 +74,17 @@ int main(int argc, char *argv[]) {
         }
 
         freeTokenList(startTokenList);
+
         #if !BONUS
         free(inputLine);
         #endif
+
         if(exitFlag){
             break;
         }
-//         free history
     }
+
+    // Free history
     #if BONUS
     for (int i = 0; i < histTop; i++) {
         free(history[i]);

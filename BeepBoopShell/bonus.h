@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define RED   "\x1B[31m"
 #define GRN   "\x1B[32m"
@@ -22,6 +23,6 @@
 #define BONUS 0
 
 
-char* getRainbowColor(int i);
+void printCurrentDirectory(int printFlag);
 
 #endif
