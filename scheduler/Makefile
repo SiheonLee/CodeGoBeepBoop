@@ -1,7 +1,7 @@
 all: clean scheduler
 
 scheduler:
-	gcc -std=c99 -Wall -pedantic scheduler.c LibQueue.c LibList.c -o scheduler
+	gcc -g -std=c99 -Wall -pedantic scheduler.c LibQueue.c MyList.c -o scheduler
 
 
 clean:
