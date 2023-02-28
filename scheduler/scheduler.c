@@ -1,91 +1,17 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "MyList.h"
-#include "LibQueue.h"
 #include <math.h>
 
+#include "LibQueue.h"
+#include "ArrayList.h"
+
 #define IS_SLEEPING -1
-
-List readProcess(int *n) {
-    List head = NULL;
-    List tail = NULL;
-    while(*n != -1) {
-        List node1 = (List) malloc(sizeof(struct ListNode));
-        node1->t = *n;
-        node1->next = NULL;
-        if (tail == NULL) {
-            head = node1;
-            tail = node1;
-        } else {
-            tail->next = node1;
-            tail = node1;
-        }
-        scanf("%d", n);
-    }
-    List node1 = (List) malloc(sizeof(struct ListNode));
-        node1->t = -1;
-        node1->next = NULL;
-        if (tail == NULL) {
-            head = node1;
-            tail = node1;
-        } else {
-            tail->next = node1;
-            tail = node1;
-        }
-    return head;
-}
-
-List *readInput(int *nr_processes) {
-    int n;
-    int size = 100;
-    List *inp = malloc(size*sizeof(List));
-    scanf("%d", &n);
-    while (n != EOF) {
-        inp[*nr_processes] = readProcess(&n);
-        (*nr_processes)++;
-        if(*nr_processes >= size) {
-            size *= 2;
-            inp = realloc(inp, size*sizeof(List));
-        }
-        scanf("%d", &n);
-    }
-    return inp;
-}
-
-void printOutput(List *lists, int nr_processes) {
-    for (int i = 0; i < nr_processes; i++) {
-        printList(lists[i]);
-    }
-    printf("---\n");
-}
-
-void freeProcesses(List *processes, int nr_processes) {
-    for(int i = 0; i < nr_processes; i++) {
-        freeTokenList(processes[i]);
-    }
-    free(processes);
-}
-
-int safeDequeue(Queue *queue) {
-    if(isEmptyQueue(*queue)) {
-        return IS_SLEEPING;
-    }
-    return dequeue(queue);
-}
 
 bool isDoneP(List process) {
     if(process->next->t == -1) {
         return true;
     }
     return false; 
-}
-
-List *copyProcesses(List *processes, int nrP) {
-    List *copyProcesses = malloc(nrP*sizeof(List));
-    for(int i = 0; i < nrP; i++) {
-        copyProcesses[i] = processes[i];
-    }
-    return copyProcesses;
 }
 
 double calculateTurnaroundAvrg(int *turnaround, List *processes, int nrP) {
@@ -123,7 +49,6 @@ int main(int argc, char *argv[]) {
 
         // MAIN LOOP
     while(!isEmptyQueue(readyQ) || !isEmptyQueue(blockedQ) || (runningP != IS_SLEEPING) || (blockedP != IS_SLEEPING) || currentP != nr_processes) {
-        // printOutput(processes, nr_processes);
 
         if(runningP == IS_SLEEPING) {
             runningP = safeDequeue(&readyQ); 

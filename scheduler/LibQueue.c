@@ -58,3 +58,10 @@ int dequeue (Queue *qp) {
 void freeQueue (Queue q) {
   free(q.array);
 }
+
+int safeDequeue(Queue *queue) {
+    if(isEmptyQueue(*queue)) {
+        return -1;
+    }
+    return dequeue(queue);
+}

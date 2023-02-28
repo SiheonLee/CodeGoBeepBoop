@@ -21,5 +21,6 @@ void doubleQueueSize(Queue *qp);
 void enqueue(int item, Queue *qp);
 int dequeue(Queue *qp);
 void freeQueue(Queue q);
+int safeDequeue(Queue *queue);
 
 #endif

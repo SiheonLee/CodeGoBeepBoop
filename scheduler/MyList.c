@@ -1,3 +1,11 @@
+/**
+ * @file MyList.c
+ * @brief MyList.c file adapted to manage integers from the scanner of the previous assignment.
+ * @version 0.1
+ * @date 2023-02-28
+ * 
+ */
+
 #include "MyList.h"
 
 /**
@@ -37,6 +45,12 @@ void freeTokenList(List li) {
     free(li);
 }
 
+/**
+ * @brief Create a list node object with an integer attached as a token.
+ * 
+ * @param n the integer.
+ * @return The list node.
+ */
 List newNode(int n) {
     List node = malloc(sizeof(*node));
     node->next = NULL;
