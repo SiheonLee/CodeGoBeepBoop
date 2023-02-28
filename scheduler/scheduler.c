@@ -1,12 +1,32 @@
+/**
+ * @file scheduler.c
+ * @brief The main file of the scheduler.
+ * The process scheduler is a FIFO scheduler that uses a ready queue and a blocked queue.
+ * It is designed after the state machine presented in the lecutre with: BLOCKED, READY and RUNNING.
+ * 
+ * @version 0.1
+ * @date 2023-02-28
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
-#include <math.h>
 
 #include "LibQueue.h"
 #include "ArrayList.h"
 
+// CPU or IO is sleeping
 #define IS_SLEEPING -1
 
+/**
+ * @brief Checks if a process has any more CPU or IO time to execute.
+ * 
+ * @param process the process.
+ * @return true if the process is done.
+ * @return false if the process is not done.
+ */
 bool isDoneP(List process) {
     if(process->next->t == -1) {
         return true;
@@ -14,6 +34,16 @@ bool isDoneP(List process) {
     return false; 
 }
 
+/**
+ * @brief Calculates the average turnaround time.
+ * @attention It also does the substraction of the arrival time.
+ * 
+ * @param turnaround the turnaround of each process without the arrival time substracted.
+ * @param processes the list of all the process in the initial stage.
+ *                  All processes must point to their initial element (the arrival time).
+ * @param nrP the number of processes.
+ * @return the average turnaround time.
+ */
 double calculateTurnaroundAvrg(int *turnaround, List *processes, int nrP) {
     long totalTurnaround = 0;
     for(int i = 0; i < nrP; i++) {
@@ -25,115 +55,150 @@ double calculateTurnaroundAvrg(int *turnaround, List *processes, int nrP) {
     return (totalTurnaround/nrP);
 }
 
-int main(int argc, char *argv[]) {
-    int nr_processes = 0;
-    List *processes = readInput(&nr_processes);
-    List *initialProcesses = copyProcesses(processes, nr_processes);
+/**
+ * @brief Checks if the execution is completed.
+ * 
+ * @param readyQ if nothing in ready queue.
+ * @param blockedQ if nothing in blocked queue.
+ * @param runningP if CPU process is sleeping.
+ * @param blockedP if IO process is sleeping.
+ * @param currentP if current process is the last one.
+ * @param nrP the number of processes.
+ * @return true 
+ * @return false 
+ */
+bool isExecutionCompleted(Queue readyQ, Queue blockedQ, int runningP, int blockedP, int currentP, int nrP) {
+    return !(!isEmptyQueue(readyQ) || !isEmptyQueue(blockedQ) || (runningP != IS_SLEEPING) || (blockedP != IS_SLEEPING) || currentP != nrP);
+}
 
-        // Variable definition
-    int currentP = 0;
+/**
+ * @brief Attempts to dequeue from each queue and put them in the CPU or IO executing process.
+ * 
+ * @param readyQ the ready queue.
+ * @param blockedQ the blocked queue.
+ * @param runningP the running CPU process.
+ * @param blockedP the running IO process.
+ */
+void attemptDequeues(Queue *readyQ, Queue *blockedQ, int *runningP, int *blockedP) {
+    if(*runningP == IS_SLEEPING) {
+        *runningP = safeDequeue(readyQ);
+    }
+    if(*blockedP == IS_SLEEPING) {
+        *blockedP = safeDequeue(blockedQ);
+    }
+}
+
+/**
+ * @brief Add the new process which just arrived to the ready queue.
+ * 
+ * @param readyQ the ready queue.
+ * @param processes the array of all processes from which we take the next one.
+ * @param currentP the index of the process which just arrived.
+ */
+void beginNewProcess(Queue *readyQ, List *processes, int *currentP) {
+    enqueue(*currentP, readyQ);
+    processes[*currentP] = processes[*currentP]->next;
+    (*currentP)++;
+}
+
+/**
+ * @brief Move a process to its corresponding queue from the CPU or IO.
+ * @attention Use this function when one of the CPU or IO is sleeping
+ * 
+ * @param totalTimeUnits the total time units passed.
+ * @param turnaround adds the finish time in case of process execution to the array of turnarounds.
+ * @param processes the array of all processes.
+ * @param P the current process that finished.
+ * @param currentQ the queue from which we put insert in the CPU or IO.
+ * @param moveToQ where we move the current process to.
+ */
+void moveProcessOtherSleeping(int *totalTimeUnits, int *turnaround, List *processes, int *P, Queue *currentQ, Queue *moveToQ) {
+    *totalTimeUnits += processes[*P]->t;
+    if(!isDoneP(processes[*P])) {
+        processes[*P] = processes[*P]->next;
+        enqueue(*P, moveToQ);
+    } else {
+        turnaround[*P] = *totalTimeUnits;
+    }
+    *P = safeDequeue(currentQ);
+}
+
+
+/**
+ * @brief Move a process to its corresponding queue from the CPU or IO.
+ * 
+ * @param totalTimeUnits the total time units passed.
+ * @param turnaround adds the finish time in case of process execution to the array of turnarounds.
+ * @param processes the array of all processes.
+ * @param currentP the current process that finished.
+ * @param otherP the other process that needs time reduction.
+ * @param currentQ the queue from which we put insert in the CPU or IO.
+ * @param moveToQ where we move the current process to.
+ */
+void moveProcess(int *totalTimeUnits, int *turnaround, List *processes, int *currentP, int *otherP, Queue *currentQ, Queue *moveToQ) {
+    *totalTimeUnits += processes[*currentP]->t;
+    processes[*otherP]->t -= processes[*currentP]->t;
+
+    if(!isDoneP(processes[*currentP])) {
+        processes[*currentP] = processes[*currentP]->next;
+        enqueue(*currentP, moveToQ);
+    } else {
+        turnaround[*currentP] = *totalTimeUnits;
+    }
+    *currentP = safeDequeue(currentQ);
+}
+
+/**
+ * @brief Main function.
+ */
+int main(int argc, char *argv[]) {
+    int nrP = 0;
+    List *processes = readInput(&nrP);
+    List *initialProcesses = copyProcesses(processes, nrP);
 
     int totalTimeUnits = 0;
+    int currentP = 0, runningP = -1, blockedP = -1;
+    Queue readyQ = newQueue(nrP);
+    Queue blockedQ = newQueue(nrP);
+    int *turnaround = malloc(nrP*sizeof(int));
 
-    int runningP = -1;
-    int blockedP = -1;
-    Queue readyQ = newQueue(nr_processes);
-    Queue blockedQ = newQueue(nr_processes);
+    // MAIN LOOP
+    while(!isExecutionCompleted(readyQ, blockedQ, runningP, blockedP, currentP, nrP)) {
 
-    int *turnaround = malloc(nr_processes*sizeof(int));
+        attemptDequeues(&readyQ, &blockedQ, &runningP, &blockedP);
 
-        // Execution
-    enqueue(currentP, &readyQ);
-    processes[currentP] = processes[currentP]->next;
-    currentP++;
+        // New process arrived
+        if(currentP < nrP && totalTimeUnits >= processes[currentP]->t) {
+            beginNewProcess(&readyQ, processes, &currentP);
 
-        // MAIN LOOP
-    while(!isEmptyQueue(readyQ) || !isEmptyQueue(blockedQ) || (runningP != IS_SLEEPING) || (blockedP != IS_SLEEPING) || currentP != nr_processes) {
-
-        if(runningP == IS_SLEEPING) {
-            runningP = safeDequeue(&readyQ); 
-        }
-        if(blockedP == IS_SLEEPING) {
-            blockedP = safeDequeue(&blockedQ); 
-        }
-
-        // Update when new process arrived
-        if(currentP < nr_processes && totalTimeUnits >= processes[currentP]->t) {
-            enqueue(currentP, &readyQ);
-            processes[currentP] = processes[currentP]->next;
-            currentP++;
-
-        // The whole system is idle
+        // STATE: The whole system is empty
         } else if(blockedP == IS_SLEEPING && runningP == IS_SLEEPING) {
-            enqueue(currentP, &readyQ);
             totalTimeUnits += processes[currentP]->t - totalTimeUnits;
-            processes[currentP] = processes[currentP]->next;
-            currentP++;
+            beginNewProcess(&readyQ, processes, &currentP);
 
-        // Nothing is in Blocked executing or in queue
+        // STATE: IO is idle && Blocked Queue is empty
         } else if(blockedP == IS_SLEEPING) {
-            // printf("BLOCKED SLEEPING: %d\n", runningP);
-            totalTimeUnits += processes[runningP]->t;
-            if(!isDoneP(processes[runningP])) {
-                processes[runningP] = processes[runningP]->next;
-                enqueue(runningP, &blockedQ);
-            } else {
-                turnaround[runningP] = totalTimeUnits;
-            }
-            
-            runningP = safeDequeue(&readyQ);
+            moveProcessOtherSleeping(&totalTimeUnits, turnaround, processes, &runningP, &readyQ, &blockedQ);
 
-        // Nothing is in Running executing or in queue
+        // STATE: CPU is idle && Ready Queue is empty
         } else if(runningP == IS_SLEEPING) {
-            // printf("RUNNING SLEEPING: %d\n", blockedP);
-            totalTimeUnits += processes[blockedP]->t;
+            moveProcessOtherSleeping(&totalTimeUnits, turnaround, processes, &blockedP, &blockedQ, &readyQ);
 
-            if(!isDoneP(processes[blockedP])) {
-                processes[blockedP] = processes[blockedP]->next;
-                enqueue(blockedP, &readyQ);
-            } else {
-                turnaround[blockedP] = totalTimeUnits;
-            }
-            
-            
-            blockedP = safeDequeue(&blockedQ);
-
-        // Process a runner
+        // STATE: CPU and IO are busy -> see which one finishes first
         } else if(processes[runningP]->t < processes[blockedP]->t) {
-            // printf("Running less: %d\n", runningP);
-            totalTimeUnits += processes[runningP]->t;
-            processes[blockedP]->t -= processes[runningP]->t;
-
-            if(!isDoneP(processes[runningP])) {
-                processes[runningP] = processes[runningP]->next;
-                enqueue(runningP, &blockedQ);
-            } else {
-                turnaround[runningP] = totalTimeUnits;
-            }
-            runningP = safeDequeue(&readyQ);
-
-        // Process a blocked
+            moveProcess(&totalTimeUnits, turnaround, processes, &runningP, &blockedP, &readyQ, &blockedQ);
         } else {
-            // printf("Blocking less: %d\n", runningP);
-            totalTimeUnits += processes[blockedP]->t;
-            processes[runningP]->t -= processes[blockedP]->t;
-
-            if(!isDoneP(processes[blockedP])) {
-                processes[blockedP] = processes[blockedP]->next;
-                enqueue(blockedP, &readyQ);
-            } else {
-                turnaround[blockedP] = totalTimeUnits;
-            }
-            blockedP = safeDequeue(&blockedQ);
+            moveProcess(&totalTimeUnits, turnaround, processes, &blockedP, &runningP, &blockedQ, &readyQ);
         }
     }
-    double result = calculateTurnaroundAvrg(turnaround, initialProcesses, nr_processes);
-    printf("%.0lf\n", round(result));
 
+    printf("%.0lf\n", calculateTurnaroundAvrg(turnaround, initialProcesses, nrP));
+
+    // I WANT TO BREAK FREE !!!
     free(turnaround);
     freeQueue(readyQ);
     freeQueue(blockedQ);
-    freeProcesses(initialProcesses, nr_processes);
+    freeProcesses(initialProcesses, nrP);
     free(processes);
     return 0;
 }
