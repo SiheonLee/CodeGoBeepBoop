@@ -171,20 +171,20 @@ int main(int argc, char *argv[]) {
         if(currentP < nrP && totalTimeUnits >= processes[currentP]->t) {
             beginNewProcess(&readyQ, processes, &currentP);
 
-        // STATE: The whole system is empty
+        // STATE 1: The whole system is empty
         } else if(blockedP == IS_SLEEPING && runningP == IS_SLEEPING) {
             totalTimeUnits += processes[currentP]->t - totalTimeUnits;
             beginNewProcess(&readyQ, processes, &currentP);
 
-        // STATE: IO is idle && Blocked Queue is empty
+        // STATE 2: IO is idle && Blocked Queue is empty
         } else if(blockedP == IS_SLEEPING) {
             moveProcessOtherSleeping(&totalTimeUnits, turnaround, processes, &runningP, &readyQ, &blockedQ);
 
-        // STATE: CPU is idle && Ready Queue is empty
+        // STATE 3: CPU is idle && Ready Queue is empty
         } else if(runningP == IS_SLEEPING) {
             moveProcessOtherSleeping(&totalTimeUnits, turnaround, processes, &blockedP, &blockedQ, &readyQ);
 
-        // STATE: CPU and IO are busy -> see which one finishes first
+        // STATE 4: CPU and IO are busy -> see which one finishes first
         } else if(processes[runningP]->t < processes[blockedP]->t) {
             moveProcess(&totalTimeUnits, turnaround, processes, &runningP, &blockedP, &readyQ, &blockedQ);
         } else {
