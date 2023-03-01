@@ -17,6 +17,9 @@ bool contains(Queue q, int page) {
 
 bool isFullQueue(Queue q) {
     if(q.back < q.size) {
+        if (isEmptyQueue(q)) {
+            return false;
+        }
         return ((q.back - q.front + q.size) % q.size) == (q.size-1);
     }
     return ((q.back - q.front) % q.size) == (q.size-1);
@@ -24,7 +27,7 @@ bool isFullQueue(Queue q) {
 
 Queue newQueue (int s) {
   Queue q;
-  q.array = malloc(s*sizeof(int));
+  q.array = calloc(s,sizeof(int));
   assert(q.array != NULL);
   q.back = 0;
   q.front = 0;
@@ -56,13 +59,9 @@ void doubleQueueSize (Queue *qp) {
 void enqueue (int item, Queue *qp) {
   qp->array[qp->back] = item;
   qp->back = (qp->back + 1) % qp->size;
-  if ( qp->back == qp->front ) {
-    doubleQueueSize(qp);
-  }
 }
 
 int dequeue (Queue *qp) {
-//    printf("TEST");
   int item;
   if (isEmptyQueue(*qp)) {
     queueEmptyError();
