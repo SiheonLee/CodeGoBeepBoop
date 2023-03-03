@@ -1,3 +1,5 @@
+/* based on queueTypeAndFunctions.c by Gerard Renardel, 31 January 2018 */
+
 #ifndef LIBQUEUE_H
 #define LIBQUEUE_H
 
@@ -6,8 +8,13 @@
 #include <assert.h>
 #include <stdbool.h>
 
+typedef struct element {
+    int page;
+    bool checked;
+} Element;
+
 typedef struct Queue {
-  int *array;
+  Element *array;
   int back;
   int front;
   int size;

@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include <stdio.h>
 #include "LibQueue.h"
 
@@ -9,9 +8,11 @@ int main() {
     Queue q = newQueue(memFrames);
     int page;
     while (scanf("%d", &page) != EOF) {
+        // Check if the page is in the queue
         if (contains(q, page)) {
             continue;
         }
+        // Make sure queue is full before dequeueing
         if (isFullQueue(q)) {
             dequeue(&q);
         }
