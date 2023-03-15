@@ -255,7 +255,9 @@ bool parseChain(List *lp, int *exitFlag, int skipFlag, History hist) {
             return false;
         }
 
-        executeBuiltIn(builtin, execArgs, exitFlag, exitCode, hist);
+        if (executeBuiltIn(builtin, execArgs, exitFlag, exitCode, hist) == -1) {
+            exitCode = 2;
+        }
         if (exitFlag) {
             free(execArgs);
             return true;

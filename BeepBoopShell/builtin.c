@@ -66,7 +66,7 @@ bool executeCD(char *args[]) {
             printf("%s", BHRED);
         #endif
 
-        printf("cd: no arguments\n");
+        printf("Error: cd requires folder to navigate to!\n");
 
         #if EXT_PROMPT
             printf("%s", RESET);
@@ -92,7 +92,7 @@ bool executeCD(char *args[]) {
             printf("%s", BHRED);
         #endif
 
-        printf("cd: %s: No such file or directory\n", args[0]);
+        printf("Error: cd directory not found!\n");
 
         #if EXT_PROMPT
             printf("%s", RESET);
