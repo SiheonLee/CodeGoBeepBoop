@@ -85,8 +85,12 @@ bool executeCommand(char **execArgs, char **executable, int skipFlag) {
     } else {
         // Child process
         printf("EXECUTE 123 %s\n", *executable);
+        char execArgs1[10][10];
+        strcpy(execArgs1[0], *executable);
+        strcpy(execArgs1[1], "hello");
+        strcpy
         // printf("EXECUTE 456 %s\n", execArgs[0]);
-        status = execvp(*executable, execArgs);
+        status = execvp(*executable, execArgs1);
         #if EXT_PROMPT
             printf("%s", BHRED);
         #endif
