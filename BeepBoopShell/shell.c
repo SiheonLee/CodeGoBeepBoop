@@ -10,6 +10,21 @@
 #include "bonus.h"
 #include "builtin.h"
 
+typedef struct Redirect {
+    char *inputFile;
+    char *outputFile;
+    bool input;
+    bool output;
+} Redirect;
+
+void printRedirect(Redirect redirect) {
+    printf("Input: %s\n", redirect.inputFile);
+    printf("Output: %s\n", redirect.outputFile);
+    printf("Input flag: %d\n", redirect.input);
+    printf("Output flag: %d\n", redirect.output);
+}
+
+
 // Exit code of the last executed command
 int exitCode = 0;
 
@@ -67,15 +82,21 @@ bool isOperator(char *s) {
 /**
  * @brief Executes a command using fork() and exec().
  * 
+ * @param executable the executable of the command
  * @param execArgs the options of the command
  * @param skipFlag if true, the command will not be executed
+ * @param filename the filename to redirect to
+ * @param redirectFlag 0 = 
  * @return true
  */
-bool executeCommand(char **execArgs, char *executable, int skipFlag) {
+bool executeCommand(char **execArgs, char *executable, int skipFlag, Redirect redirect) {
+    fflush(0);
+
     int status;
     if (skipFlag) {
         return true;
     }
+
 
     if (fork() != 0) {
         // Parent process
@@ -84,6 +105,19 @@ bool executeCommand(char **execArgs, char *executable, int skipFlag) {
             exitCode = WEXITSTATUS(status);
         }
     } else {
+
+        if (redirect.input) {
+            int fd0 = open(redirect.inputFile, O_RDONLY);
+            dup2(fd0, STDIN_FILENO);
+            close(fd0);
+        }
+
+        if (redirect.output) {
+            int fd1 = open(redirect.outputFile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+            dup2(fd1, STDOUT_FILENO);
+            close(fd1);
+        }
+        
         // Child process
         status = execvp(executable, execArgs);
         #if EXT_PROMPT
@@ -144,11 +178,9 @@ bool parseCommand(List *lp, int skipFlag, char **executable, char ***execArgs) {
 
     // Parse options
     if(!parseOptions(lp, execArgs, skipFlag)) {
-//        free(execArgs);
         return false;
     }
 
-//    free(execArgs);
     return true;
 }
 
@@ -178,14 +210,20 @@ bool parsePipeline(List *lp, int skipFlag, char **executable, char ***execArgs) 
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the filename was parsed successfully.
  */
-bool parseFileName(List *lp, int inputFlag) {
-    char *fileName = (*lp)->t;
-    if(inputFlag) {
-        int fd0 = open(input, O_RDONLY);
-        dup2(fd0, STDIN_FILENO);
-        close(fd0);
+bool parseFileName(List *lp, Redirect *redirect, int inputFlag) {
+    if (isEmpty(*lp)) {
+        return false;
     }
 
+    if(inputFlag) {
+        (*redirect).inputFile = (*lp)->t;
+        (*redirect).input = true;
+    } else {
+        (*redirect).outputFile = (*lp)->t;
+        (*redirect).output = true;
+    }
+    
+    (*lp) = (*lp)->next;
     return true;
 }
 
@@ -198,19 +236,19 @@ bool parseFileName(List *lp, int inputFlag) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the redirections were parsed successfully.
  */
-bool parseRedirections(List *lp) {
+bool parseRedirections(List *lp, Redirect *redirect) {
     if (isEmpty(*lp)) {
         return true;
     }
 
     if (acceptToken(lp, "<")) {
-        if (!parseFileName(lp, 1)) return false;
+        if (!parseFileName(lp, redirect, 1)) return false;
 
-        if (acceptToken(lp, ">")) return parseFileName(lp, 0);
+        if (acceptToken(lp, ">")) return parseFileName(lp, redirect, 0);
         else return true;
     } else if (acceptToken(lp, ">")) {
-        if (!parseFileName(lp, 0)) return false;
-        if (acceptToken(lp, "<")) return parseFileName(lp, 1);
+        if (!parseFileName(lp, redirect, 0)) return false;
+        if (acceptToken(lp, "<")) return parseFileName(lp, redirect, 1);
         else return true;
     }
 
@@ -268,13 +306,20 @@ bool parseChain(List *lp, char ***execArgs, char **executable, int *exitFlag, in
 
     // Pipeline
     if (parsePipeline(lp, skipFlag, executable, execArgs)) {
+        Redirect redirect;
+        redirect.input = false;
+        redirect.output = false;
+        if (!parseRedirections(lp, &redirect)) {
+            return false;
+        }
+
         // Execute command
-        if(!executeCommand(*execArgs, *executable, skipFlag)) {
+        if(!executeCommand(*execArgs, *executable, skipFlag, redirect)) {
             free(*execArgs);
             return false;
         }
-        free(*execArgs);
-        return parseRedirections(lp);
+        free(*execArgs);  
+        return true;
     }
     return false;
 }
@@ -301,6 +346,7 @@ bool parseInputLine(List *lp, int *exitFlag, int skipFlag, History hist) {
     char *executable;
 
     if (!parseChain(lp, &execArgs, &executable, exitFlag, skipFlag, hist)) {
+        
         return false;
     }
 
