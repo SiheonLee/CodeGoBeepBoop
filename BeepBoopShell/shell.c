@@ -262,6 +262,11 @@ bool parseChain(List *lp, char ***execArgs, char **executable, int *exitFlag, in
 
     // Pipeline
     if (parsePipeline(lp, skipFlag, executable, execArgs)) {
+        // Execute command
+        if(!executeCommand(*execArgs, *executable, skipFlag)) {
+            return false;
+        }
+        free(*execArgs);
         return parseRedirections(lp);
     }
     return false;
@@ -291,12 +296,6 @@ bool parseInputLine(List *lp, int *exitFlag, int skipFlag, History hist) {
     if (!parseChain(lp, &execArgs, &executable, exitFlag, skipFlag, hist)) {
         return false;
     }
-
-    // Execute command
-    if(!executeCommand(execArgs, executable, skipFlag)) {
-        return false;
-    }
-    free(execArgs);
 
     // A skipFlag is used in order to decide whether to skip the next command or not.
     // This depends on the previous command's exit code and the operator used.
