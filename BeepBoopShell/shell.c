@@ -70,7 +70,7 @@ bool isOperator(char *s) {
  * @param skipFlag if true, the command will not be executed
  * @return true
  */
-bool executeCommand(char **execArgs, char *executable, int skipFlag) {
+bool executeCommand(char **execArgs, char **executable, int skipFlag) {
     int status;
     if (skipFlag) {
         return true;
@@ -84,7 +84,9 @@ bool executeCommand(char **execArgs, char *executable, int skipFlag) {
         }
     } else {
         // Child process
-        status = execvp(executable, execArgs);
+        printf("EXECUTE 123 %s\n", *executable);
+        // printf("EXECUTE 456 %s\n", execArgs[0]);
+        status = execvp(*executable, execArgs);
         #if EXT_PROMPT
             printf("%s", BHRED);
         #endif
@@ -135,27 +137,18 @@ bool parseOptions(List *lp, char ***myArgs, int skipFlag) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the command was parsed successfully.
  */
-bool parseCommand(List *lp, int skipFlag) {
+bool parseCommand(List *lp, char **executable, char **execArgs, int skipFlag) {
     // Parse executable
-    char *executable;
-    if(!parseExecutable(lp, &executable)) {
+    if(!parseExecutable(lp, executable)) {
         return false;
     }
 
     // Parse options
-    char **execArgs;
     if(!parseOptions(lp, &execArgs, skipFlag)) {
         free(execArgs);
         return false;
     }
     
-    // Execute command
-    if(!executeCommand(execArgs, executable, skipFlag)) {
-        free(execArgs);
-        return false;
-    }
-
-    free(execArgs);
     return true;
 }
 
@@ -168,13 +161,13 @@ bool parseCommand(List *lp, int skipFlag) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the pipeline was parsed successfully.
  */
-bool parsePipeline(List *lp, int skipFlag) {
-    if (!parseCommand(lp, skipFlag)) {
+bool parsePipeline(List *lp, char **executable, char **execArgs, int skipFlag) {
+    if (!parseCommand(lp, executable, execArgs, skipFlag)) {
         return false;
     }
 
     if (acceptToken(lp, "|")) {
-        return parsePipeline(lp, skipFlag);
+        return parsePipeline(lp, executable, execArgs, skipFlag);
     }
 
     return true;
@@ -244,14 +237,14 @@ bool parseBuiltIn(List *lp, char **builtin, int *exitFlag, int skipFlag) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the chain was parsed successfully.
  */
-bool parseChain(List *lp, int *exitFlag, int skipFlag, History hist) {
+bool parseChain(List *lp, char **executable, char **execArgs, int *exitFlag, int skipFlag, History hist) {
 
     // Built-in
     char *builtin;
     if (parseBuiltIn(lp, &builtin, exitFlag, skipFlag)) {
-        char **execArgs;
+        
         if(!parseOptions(lp, &execArgs, skipFlag)) {
-            free(execArgs);
+            // free(execArgs);
             return false;
         }
 
@@ -259,16 +252,16 @@ bool parseChain(List *lp, int *exitFlag, int skipFlag, History hist) {
             exitCode = 2;
         }
         if (exitFlag) {
-            free(execArgs);
+            // free(execArgs);
             return true;
         }
 
-        free(execArgs);
+        // free(execArgs);
         return true;
     }
 
     // Pipeline
-    if (parsePipeline(lp, skipFlag)) {
+    if (parsePipeline(lp, executable, execArgs, skipFlag)) {
         return parseRedirections(lp);
     }
     return false;
@@ -292,9 +285,19 @@ bool parseInputLine(List *lp, int *exitFlag, int skipFlag, History hist) {
         return true;
     }
 
-    if (!parseChain(lp, exitFlag, skipFlag, hist)) {
+    char **execArgs;
+    char **executable;
+    *executable = malloc(sizeof(char *));
+
+    if (!parseChain(lp, executable, execArgs, exitFlag, skipFlag, hist)) {
         return false;
     }
+
+    // Execute command
+    if(!executeCommand(execArgs, executable, skipFlag)) {
+    }
+
+    // free(execArgs);
 
     // A skipFlag is used in order to decide whether to skip the next command or not.
     // This depends on the previous command's exit code and the operator used.

@@ -35,6 +35,8 @@
   ],
   "C_Cpp_Runner.useAddressSanitizer": false,
   "files.associations": {
-    "unistd.h": "c"
+    "unistd.h": "c",
+    "libqueue.h": "c",
+    "arraylist.h": "c"
   }
 }

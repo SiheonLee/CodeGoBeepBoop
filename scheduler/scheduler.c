@@ -182,13 +182,13 @@ int main(int argc, char *argv[]) {
 
         // STATE 3: CPU is idle && Ready Queue is empty
         } else if(runningP == IS_SLEEPING) {
-            moveProcessOtherSleeping(&totalTimeUnits, turnaround, processes, &blockedP, &blockedQ, &readyQ);
+           totalTimeUnits = moveProcessOtherSleeping(&totalTimeUnits, turnaround, processes, &blockedP, &blockedQ, &readyQ);
 
         // STATE 4: CPU and IO are busy -> see which one finishes first
         } else if(processes[runningP]->t < processes[blockedP]->t) {
-            moveProcess(&totalTimeUnits, turnaround, processes, &runningP, &blockedP, &readyQ, &blockedQ);
+            totalTimeUnits = moveProcess(&totalTimeUnits, turnaround, processes, &runningP, &blockedP, &readyQ, &blockedQ);
         } else {
-            moveProcess(&totalTimeUnits, turnaround, processes, &blockedP, &runningP, &blockedQ, &readyQ);
+            totalTimeUnits = moveProcess(&totalTimeUnits, turnaround, processes, &blockedP, &runningP, &blockedQ, &readyQ);
         }
     }
 
