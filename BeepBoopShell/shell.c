@@ -178,9 +178,14 @@ bool parsePipeline(List *lp, int skipFlag, char **executable, char ***execArgs) 
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the filename was parsed successfully.
  */
-bool parseFileName(List *lp) {
-    //TODO: Process the file name appropriately (expected as a required later assignment)
+bool parseFileName(List *lp, int inputFlag) {
     char *fileName = (*lp)->t;
+    if(inputFlag) {
+        int fd0 = open(input, O_RDONLY);
+        dup2(fd0, STDIN_FILENO);
+        close(fd0);
+    }
+
     return true;
 }
 
@@ -199,12 +204,13 @@ bool parseRedirections(List *lp) {
     }
 
     if (acceptToken(lp, "<")) {
-        if (!parseFileName(lp)) return false;
-        if (acceptToken(lp, ">")) return parseFileName(lp);
+        if (!parseFileName(lp, 1)) return false;
+
+        if (acceptToken(lp, ">")) return parseFileName(lp, 0);
         else return true;
     } else if (acceptToken(lp, ">")) {
-        if (!parseFileName(lp)) return false;
-        if (acceptToken(lp, "<")) return parseFileName(lp);
+        if (!parseFileName(lp, 0)) return false;
+        if (acceptToken(lp, "<")) return parseFileName(lp, 1);
         else return true;
     }
 
@@ -244,7 +250,7 @@ bool parseChain(List *lp, char ***execArgs, char **executable, int *exitFlag, in
     if (parseBuiltIn(lp, &builtin, exitFlag, skipFlag)) {
         char **execArgs;
         if(!parseOptions(lp, &execArgs, skipFlag)) {
-//            free(execArgs);
+           free(execArgs);
             return false;
         }
 
@@ -252,11 +258,11 @@ bool parseChain(List *lp, char ***execArgs, char **executable, int *exitFlag, in
             exitCode = 2;
         }
         if (exitFlag) {
-//            free(execArgs);
+           free(execArgs);
             return true;
         }
 
-//        free(execArgs);
+       free(execArgs);
         return true;
     }
 
@@ -264,6 +270,7 @@ bool parseChain(List *lp, char ***execArgs, char **executable, int *exitFlag, in
     if (parsePipeline(lp, skipFlag, executable, execArgs)) {
         // Execute command
         if(!executeCommand(*execArgs, *executable, skipFlag)) {
+            free(*execArgs);
             return false;
         }
         free(*execArgs);
