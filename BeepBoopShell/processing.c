@@ -60,59 +60,68 @@ void printCommandNotFound() {
 bool executeCommand(char ***execArgs, char **executable, int skipFlag, Redirect redirect, int *exitCode, int numCommands) {
     fflush(0);
 
+    // make a pid array
+    pid_t pidArray[numCommands];
+
     int status;
     if (skipFlag || wrongDirect(redirect)) {
         return true;
     }
 
-    int pfd[2];
-    if(pipe(pfd) == -1) {
-        printf("Error: pipe failed!\n");
-        return true;
-    }
-
-    int pid1 = fork();
-    if (pid1 < 0) {
-        printf("Error: fork failed!\n");
-        return true;
-    }
-
-    if(pid1 == 0) {
-        redirectIO(redirect);
-        if (numCommands > 1) {
-            dup2(pfd[1], STDOUT_FILENO);
-            close(pfd[0]);
-            close(pfd[1]);
+    // Make The pipes
+    int pipefds[numCommands - 1][2];
+    for (int i = 0; i < numCommands - 1; i++) {
+        if (pipe(pipefds[i]) == -1) {
+            printf("Error: pipe failed!\n");
+            return true;
         }
-        *exitCode = execvp(executable[0], execArgs[0]);
-        printCommandNotFound();
     }
 
-    int pid2;
-    for(int i = 1; i < numCommands; i++) {
-        pid2 = fork();
-        if (pid2 < 0) {
+    for(int i = 0; i < numCommands; i++) {
+        int pid = fork();
+        pidArray[i] = pid;
+        if (pid < 0) {
             printf("Error: fork failed!\n");
             return true;
         }
 
-        if(pid2 == 0) {
-            dup2(pfd[0], STDIN_FILENO);
-            close(pfd[0]);
-            close(pfd[1]);
+        if(pid == 0) {
+            redirectIO(redirect);
+            if (i == 0 && numCommands > 1) {
+                // First command with multiple commands
+                dup2(pipefds[i][1], STDOUT_FILENO);
+                close(pipefds[i][0]);
+                close(pipefds[i][1]);
+            } else if (i == numCommands - 1 && numCommands > 1) {
+                // Last command with multiple commands
+                dup2(pipefds[i - 1][0], STDIN_FILENO);
+                close(pipefds[i - 1][0]);
+                close(pipefds[i - 1][1]);
+            } else if (i > 0 && i < numCommands - 1 && numCommands > 1) {
+                // Intermediate commands with multiple commands
+                dup2(pipefds[i - 1][0], STDIN_FILENO);
+                dup2(pipefds[i][1], STDOUT_FILENO);
+                close(pipefds[i - 1][0]);
+                close(pipefds[i - 1][1]);
+                close(pipefds[i][0]);
+                close(pipefds[i][1]);
+            }
             *exitCode = execvp(executable[i], execArgs[i]);
             printCommandNotFound();
         }
     }
 
-    close(pfd[0]);
-    close(pfd[1]);
+    for(int i = 0; i < numCommands - 1; i++) {
+        close(pipefds[i][0]);
+        close(pipefds[i][1]);
+    }
 
-    waitpid(pid1, &status, 0);
-    if(numCommands > 1) waitpid(pid2, &status, 0);
+    for(int i = 0; i < numCommands; i++) {
+        waitpid(pidArray[i], &status, 0);
+    }
     if (WIFEXITED(status)) {
         *exitCode = WEXITSTATUS(status);
     }
-
     return true;
 }
+
