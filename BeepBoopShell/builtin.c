@@ -61,8 +61,8 @@ bool executeStatus(int exitCode) {
  * @return true for successfull change of directory.
  * @return false for failed change of directory.
  */
-bool executeCD(char *args[]) {
-    if (args[0] == NULL) {
+bool executeCD(char **args[]) {
+    if (args[0][0] == NULL) {
         #if EXT_PROMPT
             printf("%s", BHRED);
         #endif
@@ -75,7 +75,7 @@ bool executeCD(char *args[]) {
         return false;
     }
 
-    if (args[1] != NULL) {
+    if (args[0][1] != NULL) {
         #if EXT_PROMPT
             printf("%s", BHRED);
         #endif
@@ -88,7 +88,7 @@ bool executeCD(char *args[]) {
         return false;
     }
 
-    if (chdir(args[0]) == -1) {
+    if (chdir(args[0][0]) == -1) {
         #if EXT_PROMPT
             printf("%s", BHRED);
         #endif
@@ -113,7 +113,7 @@ bool executeCD(char *args[]) {
  * @param exitCode the status code of the previous command.
  * @return the status code of the execution of the built-in command.
  */
-int executeBuiltIn(char *builtin, char *args[], int *exitFlag, int exitCode, History hist) {
+int executeBuiltIn(char *builtin, char **args[], int *exitFlag, int exitCode, History hist) {
     if (strcmp(builtin, "exit") == 0) {
         *exitFlag = 1;
         return BUILTIN_EXECUTED;

@@ -10,6 +10,6 @@
 
 
 bool isBuiltIn(char *s);
-int executeBuiltIn(char *builtin, char *args[], int *exitFlag, int exitCode, History hist);
+int executeBuiltIn(char *builtin, char **args[], int *exitFlag, int exitCode, History hist);
 
 #endif

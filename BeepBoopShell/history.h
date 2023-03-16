@@ -16,7 +16,7 @@ typedef struct History {
 
 void addInputToHistory(History *hist, char *inputLine);
 
-bool printHistory(History hist, char *args[]);
+bool printHistory(History hist, char **args[]);
 
 
 #endif

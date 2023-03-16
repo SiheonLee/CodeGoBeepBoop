@@ -22,6 +22,6 @@ typedef struct Redirect {
 
 void printRedirect(Redirect redirect);
 void initRedirect(Redirect *redirect);
-bool executeCommand(char **execArgs, char *executable, int skipFlag, Redirect redirect, int *exitCode);
+bool executeCommand(char ***execArgs, char **executable, int skipFlag, Redirect redirect, int *exitCode, int numCommands);
 
 #endif

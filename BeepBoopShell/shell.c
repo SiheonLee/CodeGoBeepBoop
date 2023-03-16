@@ -1,7 +1,18 @@
 #include "processing.h"
 
+#define MAX_ARGS 100
+
 // Exit code of the last executed command
 int exitCode = 0;
+
+void freeArgsOptions(char ***execArgs, int *numCommands) {
+    if(*numCommands == 0) {
+        free(execArgs[0]);
+    }
+    for (int i = 0; i < *numCommands; i++) {
+        free(execArgs[i]);
+    }
+}
 
 /**
  * The function acceptToken checks whether the current token matches a target identifier,
@@ -24,8 +35,8 @@ bool acceptToken(List *lp, char *ident) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the executable was parsed successfully.
  */
-bool parseExecutable(List *lp, char **executable) {
-    *executable = (*lp)->t;
+bool parseExecutable(List *lp, char **executable, int *numCommands) {
+    executable[*numCommands] = (*lp)->t;
     return true;
 }
 
@@ -60,24 +71,24 @@ bool isOperator(char *s) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the options were parsed successfully.
  */
-bool parseOptions(List *lp, char ***myArgs, int skipFlag) {
+bool parseOptions(List *lp, char ***myArgs, int skipFlag, int *numCommands) {
     // Store all the options in an arguments array
     int size = 10;
-    *myArgs = malloc(size * sizeof(char*));
+    myArgs[*numCommands] = malloc(size * sizeof(char*));
     int cnt = 0;
     while (*lp != NULL && !isOperator((*lp)->t)) {
         // Increase size of array if needed
         if (cnt == (size - 2)) {
             size *= 4;
-            *myArgs = realloc(*myArgs, size * sizeof(char*));
+            myArgs[*numCommands] = realloc(*myArgs, size * sizeof(char*));
         }
 
         // Store argument in array
-        (*myArgs)[cnt] = (*lp)->t;
+        myArgs[*numCommands][cnt] = (*lp)->t;
         cnt++;
         (*lp) = (*lp)->next;
     }
-    (*myArgs)[cnt] = NULL;
+    myArgs[*numCommands][cnt] = NULL;
     return true;
 }
 
@@ -89,17 +100,18 @@ bool parseOptions(List *lp, char ***myArgs, int skipFlag) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the command was parsed successfully.
  */
-bool parseCommand(List *lp, int skipFlag, char **executable, char ***execArgs) {
+bool parseCommand(List *lp, int skipFlag, char **executable, char ***execArgs, int *numCommands) {
     // Parse executable
-    if(!parseExecutable(lp, executable)) {
+    if(!parseExecutable(lp, executable, numCommands)) {
         return false;
     }
 
     // Parse options
-    if(!parseOptions(lp, execArgs, skipFlag)) {
+    if(!parseOptions(lp, execArgs, skipFlag, numCommands)) {
         return false;
     }
 
+    (*numCommands)++;
     return true;
 }
 
@@ -112,13 +124,13 @@ bool parseCommand(List *lp, int skipFlag, char **executable, char ***execArgs) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the pipeline was parsed successfully.
  */
-bool parsePipeline(List *lp, int skipFlag, char **executable, char ***execArgs) {
-    if (!parseCommand(lp, skipFlag,  executable, execArgs)) {
+bool parsePipeline(List *lp, int skipFlag, char **executable, char ***execArgs, int *numCommands) {
+    if (!parseCommand(lp, skipFlag,  executable, execArgs, numCommands)) {
         return false;
     }
 
     if (acceptToken(lp, "|")) {
-        return parsePipeline(lp, skipFlag, executable, execArgs);
+        return parsePipeline(lp, skipFlag, executable, execArgs, numCommands);
     }
 
     return true;
@@ -200,43 +212,43 @@ bool parseBuiltIn(List *lp, char **builtin, int *exitFlag, int skipFlag) {
  * @param lp List pointer to the start of the tokenlist.
  * @return a bool denoting whether the chain was parsed successfully.
  */
-bool parseChain(List *lp, char ***execArgs, char **executable, int *exitFlag, int skipFlag, History hist) {
+bool parseChain(List *lp, char ***execArgs, char **executable, int *exitFlag, int skipFlag, History hist, int *numCommands) {
 
     // Built-in
     char *builtin;
     if (parseBuiltIn(lp, &builtin, exitFlag, skipFlag)) {
-        if(!parseOptions(lp, execArgs, skipFlag)) {
-            free(*execArgs);
+        if(!parseOptions(lp, execArgs, skipFlag, numCommands)) {
+            freeArgsOptions(execArgs, numCommands);
             return false;
         }
 
-        int builtInExitCode = executeBuiltIn(builtin, *execArgs, exitFlag, exitCode, hist);
+        int builtInExitCode = executeBuiltIn(builtin, execArgs, exitFlag, exitCode, hist);
         if (builtInExitCode == -1) {
             exitCode = 2;
         } else if (builtInExitCode == 3) {
             exitCode = 0;
         }
 
-        free(*execArgs);
+        freeArgsOptions(execArgs, numCommands);
         return true;
     }
 
     // Pipeline
-    if (parsePipeline(lp, skipFlag, executable, execArgs)) {
+    if (parsePipeline(lp, skipFlag, executable, execArgs, numCommands)) {
         Redirect redirect;
         initRedirect(&redirect);
 
         if (!parseRedirections(lp, &redirect)) {
-            free(*execArgs);
+            freeArgsOptions(execArgs, numCommands);
             return false;
         }
 
         // Execute command
-        if(!executeCommand(*execArgs, *executable, skipFlag, redirect, &exitCode)) {
-            free(*execArgs);
+        if(!executeCommand(execArgs, executable, skipFlag, redirect, &exitCode, *numCommands)) {
+            freeArgsOptions(execArgs, numCommands);
             return false;
         }
-        free(*execArgs);  
+        freeArgsOptions(execArgs, numCommands);  
         return true;
     }
     return false;
@@ -260,12 +272,15 @@ bool parseInputLine(List *lp, int *exitFlag, int skipFlag, History hist) {
         return true;
     }
 
-    char **execArgs;
-    char *executable;
+    char ***execArgs = malloc(MAX_ARGS*sizeof(char**));
+    char **executable = malloc(MAX_ARGS*sizeof(char*));
+    int numCommands = 0;
 
-    if (!parseChain(lp, &execArgs, &executable, exitFlag, skipFlag, hist)) {
+    if (!parseChain(lp, execArgs, executable, exitFlag, skipFlag, hist, &numCommands)) {
         return false;
     }
+    free(execArgs);
+    free(executable);
 
     // A skipFlag is used in order to decide whether to skip the next command or not.
     // This depends on the previous command's exit code and the operator used.

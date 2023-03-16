@@ -14,6 +14,39 @@ void initRedirect(Redirect *redirect) {
     redirect->output = false;
 }
 
+bool wrongDirect(Redirect redirect) {
+    if(redirect.inputFile != NULL && redirect.outputFile != NULL && strcmp(redirect.inputFile, redirect.outputFile) == 0) {
+        printf("Error: input and output files cannot be equal!\n");
+        return true;
+    }
+    return false;
+}
+
+void redirectIO(Redirect redirect) {
+    // Redirect input and output
+    if (redirect.input) {
+        int fd0 = open(redirect.inputFile, O_RDONLY);
+        dup2(fd0, STDIN_FILENO);
+        close(fd0);
+    }
+    if (redirect.output) {
+        int fd1 = open(redirect.outputFile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        dup2(fd1, STDOUT_FILENO);
+        close(fd1);
+    }
+}
+
+void printCommandNotFound() {
+    #if EXT_PROMPT
+        printf("%s", BHRED);
+    #endif
+    printf("Error: command not found!\n");
+    #if EXT_PROMPT
+        printf("%s", RESET);
+    #endif
+    exit(127);
+}
+
 /**
  * @brief Executes a command using fork() and exec().
  * 
@@ -24,18 +57,19 @@ void initRedirect(Redirect *redirect) {
  * @param redirectFlag 0 = 
  * @return true
  */
-bool executeCommand(char **execArgs, char *executable, int skipFlag, Redirect redirect, int *exitCode) {
+bool executeCommand(char ***execArgs, char **executable, int skipFlag, Redirect redirect, int *exitCode, int numCommands) {
     fflush(0);
 
     int status;
-    if (skipFlag) {
+    if (skipFlag || wrongDirect(redirect)) {
         return true;
     }
 
-    if(redirect.inputFile != NULL && redirect.outputFile != NULL && strcmp(redirect.inputFile, redirect.outputFile) == 0) {
-        printf("Error: input and output files cannot be equal!\n");
-        return true;
-    }
+    // Create Pipe
+    // int pipefd[2];
+    // if (numCommands > 1) {
+    //     pipe(pipefd);
+    // }
 
     int pid = fork();
     if (pid < 0) {
@@ -50,30 +84,10 @@ bool executeCommand(char **execArgs, char *executable, int skipFlag, Redirect re
         }
 
     } else {
-        // Redirect input and output
-        if (redirect.input) {
-            int fd0 = open(redirect.inputFile, O_RDONLY);
-            dup2(fd0, STDIN_FILENO);
-            close(fd0);
-        }
-        if (redirect.output) {
-            int fd1 = open(redirect.outputFile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-            dup2(fd1, STDOUT_FILENO);
-            close(fd1);
-        }
-        
         // Child process
-        *exitCode = execvp(executable, execArgs);
-        #if EXT_PROMPT
-            printf("%s", BHRED);
-        #endif
-
-        printf("Error: command not found!\n");
-
-        #if EXT_PROMPT
-            printf("%s", RESET);
-        #endif
-        exit(127);
+        redirectIO(redirect);
+        *exitCode = execvp(executable[0], execArgs[0]);
+        printCommandNotFound();
     }
 
     return true;

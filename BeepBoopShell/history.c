@@ -39,8 +39,8 @@ int isNumeric(const char *str) {
 /**
 * @brief Prints the history of previously executed commands.
 */
-bool printHistory(History hist, char *args[]) {
-    if (args[0] == NULL) {
+bool printHistory(History hist, char **args[]) {
+    if (args[0][0] == NULL) {
         if (hist.top == 0) {
             printf("No commands in history.\n");
             return false;
@@ -50,8 +50,8 @@ bool printHistory(History hist, char *args[]) {
             }
             return true;
         }
-    } else if (isNumeric(args[0]) && args[1] == NULL && atoi(args[0]) >= 0 && atoi(args[0]) < hist.top) {
-        List tokenList = getTokenList(hist.arr[atoi(args[0])]);
+    } else if (isNumeric(args[0][0]) && args[1] == NULL && atoi(args[0][0]) >= 0 && atoi(args[0][0]) < hist.top) {
+        List tokenList = getTokenList(hist.arr[atoi(args[0][0])]);
         List startTokenList = tokenList;
         bool parsedSuccessfully = parseInputLine(&tokenList, 0, 0, hist); // exitFlag will be set to 1 for exit command
         if (!(tokenList == NULL && parsedSuccessfully)) {
