@@ -97,6 +97,11 @@ bool executeCommand(char **execArgs, char *executable, int skipFlag, Redirect re
         return true;
     }
 
+    if(redirect.inputFile != NULL && redirect.outputFile != NULL && strcmp(redirect.inputFile, redirect.outputFile) == 0) {
+        printf("Error: input and output files cannot be equal!\n");
+        return true;
+    }
+
 
     if (fork() != 0) {
         // Parent process
@@ -119,7 +124,7 @@ bool executeCommand(char **execArgs, char *executable, int skipFlag, Redirect re
         }
         
         // Child process
-        status = execvp(executable, execArgs);
+        exitCode = execvp(executable, execArgs);
         #if EXT_PROMPT
             printf("%s", BHRED);
         #endif
@@ -252,6 +257,8 @@ bool parseRedirections(List *lp, Redirect *redirect) {
         else return true;
     }
 
+    
+
     return true;
 }
 
@@ -286,21 +293,20 @@ bool parseChain(List *lp, char ***execArgs, char **executable, int *exitFlag, in
     // Built-in
     char *builtin;
     if (parseBuiltIn(lp, &builtin, exitFlag, skipFlag)) {
-        char **execArgs;
-        if(!parseOptions(lp, &execArgs, skipFlag)) {
-           free(execArgs);
+        if(!parseOptions(lp, execArgs, skipFlag)) {
+            free(*execArgs);
             return false;
         }
 
-        if (executeBuiltIn(builtin, execArgs, exitFlag, exitCode, hist) == -1) {
+        if (executeBuiltIn(builtin, *execArgs, exitFlag, exitCode, hist) == -1) {
             exitCode = 2;
         }
-        if (exitFlag) {
-           free(execArgs);
-            return true;
-        }
+        // if (exitFlag) {
+        //     free(*execArgs);
+        //     return true;
+        // }
 
-       free(execArgs);
+        free(*execArgs);
         return true;
     }
 
@@ -309,7 +315,11 @@ bool parseChain(List *lp, char ***execArgs, char **executable, int *exitFlag, in
         Redirect redirect;
         redirect.input = false;
         redirect.output = false;
+        redirect.inputFile = NULL;
+        redirect.outputFile = NULL;
+
         if (!parseRedirections(lp, &redirect)) {
+            free(*execArgs);
             return false;
         }
 
@@ -346,7 +356,6 @@ bool parseInputLine(List *lp, int *exitFlag, int skipFlag, History hist) {
     char *executable;
 
     if (!parseChain(lp, &execArgs, &executable, exitFlag, skipFlag, hist)) {
-        
         return false;
     }
 
