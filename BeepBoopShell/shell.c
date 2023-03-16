@@ -1,29 +1,4 @@
-#include <stdbool.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <fcntl.h>
-
-#include "scanner.h"
-#include "bonus.h"
-#include "builtin.h"
-
-typedef struct Redirect {
-    char *inputFile;
-    char *outputFile;
-    bool input;
-    bool output;
-} Redirect;
-
-void printRedirect(Redirect redirect) {
-    printf("Input: %s\n", redirect.inputFile);
-    printf("Output: %s\n", redirect.outputFile);
-    printf("Input flag: %d\n", redirect.input);
-    printf("Output flag: %d\n", redirect.output);
-}
-
+#include "processing.h"
 
 // Exit code of the last executed command
 int exitCode = 0;
@@ -77,67 +52,6 @@ bool isOperator(char *s) {
         if (strcmp(s, operators[i]) == 0) return true;
     }
     return false;
-}
-
-/**
- * @brief Executes a command using fork() and exec().
- * 
- * @param executable the executable of the command
- * @param execArgs the options of the command
- * @param skipFlag if true, the command will not be executed
- * @param filename the filename to redirect to
- * @param redirectFlag 0 = 
- * @return true
- */
-bool executeCommand(char **execArgs, char *executable, int skipFlag, Redirect redirect) {
-    fflush(0);
-
-    int status;
-    if (skipFlag) {
-        return true;
-    }
-
-    if(redirect.inputFile != NULL && redirect.outputFile != NULL && strcmp(redirect.inputFile, redirect.outputFile) == 0) {
-        printf("Error: input and output files cannot be equal!\n");
-        return true;
-    }
-
-
-    if (fork() != 0) {
-        // Parent process
-        waitpid(-1, &status, 0);
-        if (WIFEXITED(status)) {
-            exitCode = WEXITSTATUS(status);
-        }
-    } else {
-
-        if (redirect.input) {
-            int fd0 = open(redirect.inputFile, O_RDONLY);
-            dup2(fd0, STDIN_FILENO);
-            close(fd0);
-        }
-
-        if (redirect.output) {
-            int fd1 = open(redirect.outputFile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-            dup2(fd1, STDOUT_FILENO);
-            close(fd1);
-        }
-        
-        // Child process
-        exitCode = execvp(executable, execArgs);
-        #if EXT_PROMPT
-            printf("%s", BHRED);
-        #endif
-
-        printf("Error: command not found!\n");
-
-        #if EXT_PROMPT
-            printf("%s", RESET);
-        #endif
-        exit(127);
-    }
-
-    return true;
 }
 
 /**
@@ -257,8 +171,6 @@ bool parseRedirections(List *lp, Redirect *redirect) {
         else return true;
     }
 
-    
-
     return true;
 }
 
@@ -298,13 +210,12 @@ bool parseChain(List *lp, char ***execArgs, char **executable, int *exitFlag, in
             return false;
         }
 
-        if (executeBuiltIn(builtin, *execArgs, exitFlag, exitCode, hist) == -1) {
+        int builtInExitCode = executeBuiltIn(builtin, *execArgs, exitFlag, exitCode, hist);
+        if (builtInExitCode == -1) {
             exitCode = 2;
+        } else if (builtInExitCode == 3) {
+            exitCode = 0;
         }
-        // if (exitFlag) {
-        //     free(*execArgs);
-        //     return true;
-        // }
 
         free(*execArgs);
         return true;
@@ -313,10 +224,7 @@ bool parseChain(List *lp, char ***execArgs, char **executable, int *exitFlag, in
     // Pipeline
     if (parsePipeline(lp, skipFlag, executable, execArgs)) {
         Redirect redirect;
-        redirect.input = false;
-        redirect.output = false;
-        redirect.inputFile = NULL;
-        redirect.outputFile = NULL;
+        initRedirect(&redirect);
 
         if (!parseRedirections(lp, &redirect)) {
             free(*execArgs);
@@ -324,7 +232,7 @@ bool parseChain(List *lp, char ***execArgs, char **executable, int *exitFlag, in
         }
 
         // Execute command
-        if(!executeCommand(*execArgs, *executable, skipFlag, redirect)) {
+        if(!executeCommand(*execArgs, *executable, skipFlag, redirect, &exitCode)) {
             free(*execArgs);
             return false;
         }

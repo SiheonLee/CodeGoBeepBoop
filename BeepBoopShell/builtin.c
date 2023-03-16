@@ -16,6 +16,7 @@
 #define BUILTIN_NOT_FOUND 126
 #define BUILTIN_EXECUTED 0
 #define BUILTIN_FAILED -1
+#define CD_SUCCESS 3
 
 /**
  * @brief Checks if a command is a built-in command.
@@ -124,7 +125,7 @@ int executeBuiltIn(char *builtin, char *args[], int *exitFlag, int exitCode, His
     }
 
     if (strcmp(builtin, "cd") == 0) {
-        if (executeCD(args)) return BUILTIN_EXECUTED;
+        if (executeCD(args)) return CD_SUCCESS;
         return BUILTIN_FAILED;
     }
 
