@@ -78,32 +78,38 @@ bool executeCommand(char ***execArgs, char **executable, int skipFlag, Redirect 
     }
 
     if(pid1 == 0) {
-        dup2(pfd[1], STDOUT_FILENO);
-        close(pfd[0]);
-        close(pfd[1]);
+        redirectIO(redirect);
+        if (numCommands > 1) {
+            dup2(pfd[1], STDOUT_FILENO);
+            close(pfd[0]);
+            close(pfd[1]);
+        }
         *exitCode = execvp(executable[0], execArgs[0]);
         printCommandNotFound();
     }
 
-    int pid2 = fork();
-    if (pid2 < 0) {
-        printf("Error: fork failed!\n");
-        return true;
-    }
+    int pid2;
+    for(int i = 1; i < numCommands; i++) {
+        pid2 = fork();
+        if (pid2 < 0) {
+            printf("Error: fork failed!\n");
+            return true;
+        }
 
-    if(pid2 == 0) {
-        dup2(pfd[0], STDIN_FILENO);
-        close(pfd[0]);
-        close(pfd[1]);
-        *exitCode = execvp(executable[1], execArgs[1]);
-        printCommandNotFound();
+        if(pid2 == 0) {
+            dup2(pfd[0], STDIN_FILENO);
+            close(pfd[0]);
+            close(pfd[1]);
+            *exitCode = execvp(executable[i], execArgs[i]);
+            printCommandNotFound();
+        }
     }
 
     close(pfd[0]);
     close(pfd[1]);
 
     waitpid(pid1, &status, 0);
-    waitpid(pid2, &status, 0);
+    if(numCommands > 1) waitpid(pid2, &status, 0);
     if (WIFEXITED(status)) {
         *exitCode = WEXITSTATUS(status);
     }
