@@ -1,3 +1,16 @@
+/**
+ * @file main.c
+ * @author Andrei Girjoaba, Oscar de Francesca
+ * @brief Our main file containing the loop of the shell.
+ * Inside the loop we read input, tokenize it and parse it until the user exits.
+ * 
+ * @version 1.1
+ * @date 2023-03-17
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -22,7 +35,10 @@ int main(int argc, char *argv[]) {
     setbuf(stdin, NULL);
     setbuf(stdout, NULL);
 
+    #if EXT_PROMPT
     char cwd[200];
+    #endif
+
     History hist;
     hist.index = 0;
     hist.top = 0;
